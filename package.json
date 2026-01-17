@@ -19,11 +19,13 @@
     "expo-device": "~8.0.10",
     "expo-notifications": "~0.32.16",
     "expo-status-bar": "~3.0.9",
+    "fs-extra": "^11.3.3",
     "react": "19.1.0",
     "react-native": "0.81.5",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
+    "@types/fs-extra": "^11.0.4",
     "@types/react": "~19.1.0",
     "@types/uuid": "^10.0.0",
     "canvas": "^3.2.1",
