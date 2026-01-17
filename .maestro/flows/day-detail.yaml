@@ -1,0 +1,27 @@
+appId: com.subcal.app
+---
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: "January"
+    timeout: 10000
+
+# Tap on day 3 which should have Netflix
+- tapOn:
+    text: "3"
+    index: 0
+
+- extendedWaitUntil:
+    visible: "Netflix"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: 06-day-detail-modal
+
+# Close modal by tapping outside or X
+- tapOn:
+    text: "×"
+    optional: true
+- back:
+    optional: true
