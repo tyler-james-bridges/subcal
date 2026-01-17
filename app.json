@@ -14,8 +14,22 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.subcal.app"
+      "bundleIdentifier": "com.subcal.app",
+      "entitlements": {
+        "com.apple.security.application-groups": ["group.com.subcal.app"]
+      }
     },
+    "plugins": [
+      ["@bittingz/expo-widgets", {
+        "ios": {
+          "src": "./widgets/SubCalWidget",
+          "mode": "production",
+          "entitlements": {
+            "com.apple.security.application-groups": ["group.com.subcal.app"]
+          }
+        }
+      }]
+    ],
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

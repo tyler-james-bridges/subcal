@@ -3,6 +3,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { Subscription } from '../types';
 import { saveSubscriptions, loadSubscriptions } from '../utils/storage';
 import { sampleSubscriptions } from '../data/sampleSubscriptions';
+import {
+  requestNotificationPermissions,
+  scheduleAllRenewalNotifications,
+  cancelSubscriptionNotifications,
+  scheduleRenewalNotification,
+} from '../services/notifications';
+import { syncWidgetData } from '../services/widgetSync';
+import { getSubscriptionStats } from '../utils';
 
 interface SubscriptionContextType {
   subscriptions: Subscription[];
@@ -42,6 +50,26 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   useEffect(() => {
     refreshSubscriptions();
   }, [refreshSubscriptions]);
+
+  // Set up notifications and sync widget when subscriptions change
+  useEffect(() => {
+    const setupNotifications = async () => {
+      const hasPermission = await requestNotificationPermissions();
+      if (hasPermission && subscriptions.length > 0) {
+        await scheduleAllRenewalNotifications(subscriptions);
+      }
+    };
+
+    const syncWidget = async () => {
+      const stats = getSubscriptionStats(subscriptions);
+      await syncWidgetData(subscriptions, stats.monthlyTotal);
+    };
+
+    if (!isLoading) {
+      setupNotifications();
+      syncWidget();
+    }
+  }, [subscriptions, isLoading]);
 
   const addSubscription = async (subscription: Omit<Subscription, 'id'>) => {
     const newSubscription: Subscription = {
