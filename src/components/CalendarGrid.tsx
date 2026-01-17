@@ -47,6 +47,7 @@ export function CalendarGrid({ days, onDayPress }: CalendarGridProps) {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
     padding: spacing.sm,
   },
   weekdayHeader: {
@@ -65,6 +66,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
   },
   weekRow: {
+    flex: 1,
     flexDirection: 'row',
   },
 });

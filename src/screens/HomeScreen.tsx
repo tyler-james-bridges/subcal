@@ -149,19 +149,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: colors.background,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
   },
   loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
   },
   card: {
+    flex: 1,
     backgroundColor: colors.cardBackground,
     borderRadius: 16,
-    width: '100%',
-    maxWidth: 400,
+    margin: 16,
     overflow: 'hidden',
   },
 });

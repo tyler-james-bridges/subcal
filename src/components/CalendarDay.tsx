@@ -61,12 +61,10 @@ export function CalendarDay({ day, onPress }: CalendarDayProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    aspectRatio: 1,
     margin: 2,
     padding: spacing.xs,
     backgroundColor: colors.cardBackground,
     borderRadius: borderRadius.md,
-    minHeight: 60,
   },
   todayContainer: {
     backgroundColor: colors.todayBackground,
