@@ -155,7 +155,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   card: {
-    flex: 1,
     backgroundColor: colors.cardBackground,
     borderRadius: 16,
     margin: 16,
