@@ -1,0 +1,29 @@
+appId: com.subcal.app
+---
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: "January"
+    timeout: 10000
+
+- takeScreenshot: 01-home-calendar
+
+- tapOn: "Today"
+- takeScreenshot: 02-today-highlighted
+
+- tapOn:
+    text: ">"
+- extendedWaitUntil:
+    visible: "February"
+    timeout: 3000
+- takeScreenshot: 03-next-month
+
+- tapOn:
+    text: "<"
+- tapOn:
+    text: "<"
+- extendedWaitUntil:
+    visible: "December"
+    timeout: 3000
+- takeScreenshot: 04-previous-month

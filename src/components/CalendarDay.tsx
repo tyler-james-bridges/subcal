@@ -7,9 +7,10 @@ import { ServiceIcon } from './ServiceIcon';
 interface CalendarDayProps {
   day: CalendarDayType;
   onPress?: (day: CalendarDayType) => void;
+  cellHeight?: number;
 }
 
-export function CalendarDay({ day, onPress }: CalendarDayProps) {
+export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
   const { dayOfMonth, isCurrentMonth, isToday, subscriptions } = day;
 
   const hasMonthly = subscriptions.some((s) => s.billingCycle === 'monthly');
@@ -20,6 +21,7 @@ export function CalendarDay({ day, onPress }: CalendarDayProps) {
     <TouchableOpacity
       style={[
         styles.container,
+        cellHeight ? { height: cellHeight } : null,
         isToday && styles.todayContainer,
         !isCurrentMonth && styles.otherMonth,
       ]}
@@ -61,12 +63,10 @@ export function CalendarDay({ day, onPress }: CalendarDayProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    aspectRatio: 1,
     margin: 2,
     padding: spacing.xs,
     backgroundColor: colors.cardBackground,
     borderRadius: borderRadius.md,
-    minHeight: 60,
   },
   todayContainer: {
     backgroundColor: colors.todayBackground,

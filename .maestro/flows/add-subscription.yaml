@@ -1,0 +1,28 @@
+appId: com.subcal.app
+---
+- launchApp:
+    clearState: true
+
+- extendedWaitUntil:
+    visible: "January"
+    timeout: 10000
+
+# Tap the + button to add subscription
+- tapOn:
+    id: "add-subscription-button"
+    optional: true
+- tapOn:
+    text: "+"
+    optional: true
+
+- extendedWaitUntil:
+    visible: "Add Subscription"
+    timeout: 5000
+    optional: true
+
+- takeScreenshot: 05-add-subscription-modal
+
+# Close modal
+- tapOn:
+    text: "Cancel"
+    optional: true

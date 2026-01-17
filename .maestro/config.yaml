@@ -1,0 +1,14 @@
+# Maestro configuration
+flows:
+  - flows/
+
+# Screenshot output directory
+output:
+  path: ./screenshots
+
+# Default app settings
+appId: com.subcal.app
+
+# Execution settings
+executionOrder:
+  continueOnFailure: true
