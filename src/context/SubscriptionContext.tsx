@@ -16,6 +16,7 @@ interface SubscriptionContextType {
   subscriptions: Subscription[];
   isLoading: boolean;
   addSubscription: (subscription: Omit<Subscription, 'id'>) => Promise<void>;
+  addSubscriptions: (subscriptions: Omit<Subscription, 'id'>[]) => Promise<void>;
   updateSubscription: (id: string, updates: Partial<Subscription>) => Promise<void>;
   deleteSubscription: (id: string) => Promise<void>;
   toggleSubscription: (id: string) => Promise<void>;
@@ -81,6 +82,16 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     await saveSubscriptions(updated);
   };
 
+  const addSubscriptions = async (newSubscriptions: Omit<Subscription, 'id'>[]) => {
+    const subscriptionsWithIds: Subscription[] = newSubscriptions.map((sub) => ({
+      ...sub,
+      id: uuidv4(),
+    }));
+    const updated = [...subscriptions, ...subscriptionsWithIds];
+    setSubscriptions(updated);
+    await saveSubscriptions(updated);
+  };
+
   const updateSubscription = async (id: string, updates: Partial<Subscription>) => {
     const updated = subscriptions.map((sub) =>
       sub.id === id ? { ...sub, ...updates } : sub
@@ -109,6 +120,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         subscriptions,
         isLoading,
         addSubscription,
+        addSubscriptions,
         updateSubscription,
         deleteSubscription,
         toggleSubscription,
