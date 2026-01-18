@@ -9,6 +9,7 @@ import {
   CalendarFooter,
   AddSubscriptionModal,
   DayDetailModal,
+  SearchFilterModal,
 } from '../components';
 import { useSubscriptions } from '../context/SubscriptionContext';
 import {
@@ -23,6 +24,7 @@ export function HomeScreen() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState<CalendarDayType | null>(null);
   const [showDayDetail, setShowDayDetail] = useState(false);
+  const [showSearchModal, setShowSearchModal] = useState(false);
 
   const {
     subscriptions,
@@ -125,7 +127,10 @@ export function HomeScreen() {
 
         <CalendarLegend totalSubscriptions={stats.total} newThisMonth={0} />
 
-        <CalendarFooter monthlyTotal={stats.monthlyTotal} />
+        <CalendarFooter
+          monthlyTotal={stats.monthlyTotal}
+          onSearchPress={() => setShowSearchModal(true)}
+        />
       </View>
 
       <AddSubscriptionModal
@@ -140,6 +145,12 @@ export function HomeScreen() {
         onClose={() => setShowDayDetail(false)}
         onDeleteSubscription={handleDeleteSubscription}
         onToggleSubscription={handleToggleSubscription}
+      />
+
+      <SearchFilterModal
+        visible={showSearchModal}
+        onClose={() => setShowSearchModal(false)}
+        subscriptions={subscriptions}
       />
     </SafeAreaView>
   );
