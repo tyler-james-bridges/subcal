@@ -79,7 +79,7 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>Add Subscription</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close">
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
