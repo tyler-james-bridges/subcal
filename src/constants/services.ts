@@ -18,7 +18,7 @@ export const serviceConfigs: Record<ServiceIcon, ServiceConfig> = {
   },
   adobe: {
     name: 'Adobe',
-    icon: 'adobe',
+    icon: 'palette',
     iconFamily: 'MaterialCommunityIcons',
     color: '#FF0000',
     backgroundColor: '#1a0000',
@@ -39,7 +39,7 @@ export const serviceConfigs: Record<ServiceIcon, ServiceConfig> = {
   },
   figma: {
     name: 'Figma',
-    icon: 'figma',
+    icon: 'vector-square',
     iconFamily: 'MaterialCommunityIcons',
     color: '#F24E1E',
     backgroundColor: '#1a1a1a',

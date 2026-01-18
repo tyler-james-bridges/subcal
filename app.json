@@ -14,7 +14,8 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.subcal.app"
+      "bundleIdentifier": "com.subcal.app",
+      "appleTeamId": "4WXA94CNKK"
     },
     "android": {
       "adaptiveIcon": {
