@@ -3,8 +3,9 @@ appId: com.subcal.app
 - launchApp:
     clearState: true
 
+# Wait for calendar to load by checking for the "Today" button (always visible)
 - extendedWaitUntil:
-    visible: "January"
+    visible: "Today"
     timeout: 10000
 
 # Tap on day 3 which should have Netflix
