@@ -10,6 +10,7 @@ interface CalendarHeaderProps {
   onNextMonth: () => void;
   onToday: () => void;
   onAddPress: () => void;
+  onImportPress: () => void;
 }
 
 export function CalendarHeader({
@@ -18,6 +19,7 @@ export function CalendarHeader({
   onNextMonth,
   onToday,
   onAddPress,
+  onImportPress,
 }: CalendarHeaderProps) {
   return (
     <View style={styles.container}>
@@ -35,9 +37,14 @@ export function CalendarHeader({
           </TouchableOpacity>
         </View>
       </View>
-      <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
-        <Ionicons name="add" size={24} color={colors.text} />
-      </TouchableOpacity>
+      <View style={styles.rightSection}>
+        <TouchableOpacity style={styles.importButton} onPress={onImportPress}>
+          <Ionicons name="document-text" size={20} color={colors.text} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
+          <Ionicons name="add" size={24} color={colors.text} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -77,6 +84,19 @@ const styles = StyleSheet.create({
   },
   navButton: {
     padding: spacing.xs,
+  },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  importButton: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.surface,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   addButton: {
     width: 40,

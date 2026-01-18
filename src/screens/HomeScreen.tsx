@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator } from 'react-native';
-import { CalendarDay as CalendarDayType } from '../types';
+import { View, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import { CalendarDay as CalendarDayType, DetectedSubscription } from '../types';
 import { colors } from '../constants';
 import {
   CalendarHeader,
@@ -10,6 +10,7 @@ import {
   AddSubscriptionModal,
   DayDetailModal,
   SearchFilterModal,
+  StatementImportModal,
 } from '../components';
 import { useSubscriptions } from '../context/SubscriptionContext';
 import {
@@ -22,6 +23,7 @@ import {
 export function HomeScreen() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
   const [selectedDay, setSelectedDay] = useState<CalendarDayType | null>(null);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -30,6 +32,7 @@ export function HomeScreen() {
     subscriptions,
     isLoading,
     addSubscription,
+    addSubscriptions,
     deleteSubscription,
     toggleSubscription,
   } = useSubscriptions();
@@ -103,6 +106,32 @@ export function HomeScreen() {
     [toggleSubscription, selectedDay]
   );
 
+  const handleImportSubscriptions = useCallback(
+    async (detectedSubscriptions: DetectedSubscription[]) => {
+      // Convert detected subscriptions to the format needed for adding
+      const subscriptionsToAdd = detectedSubscriptions.map((sub) => ({
+        name: sub.name,
+        price: sub.price,
+        currency: sub.currency,
+        billingCycle: sub.billingCycle,
+        billingDay: sub.billingDay,
+        startDate: new Date().toISOString(),
+        icon: sub.suggestedIcon,
+        color: sub.suggestedColor,
+        isActive: true,
+      }));
+
+      await addSubscriptions(subscriptionsToAdd);
+
+      Alert.alert(
+        'Import Complete',
+        `Successfully imported ${subscriptionsToAdd.length} subscription${subscriptionsToAdd.length !== 1 ? 's' : ''}.`,
+        [{ text: 'OK' }]
+      );
+    },
+    [addSubscriptions]
+  );
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -121,6 +150,7 @@ export function HomeScreen() {
           onNextMonth={handleNextMonth}
           onToday={handleToday}
           onAddPress={() => setShowAddModal(true)}
+          onImportPress={() => setShowImportModal(true)}
         />
 
         <CalendarGrid days={calendarDays} onDayPress={handleDayPress} />
@@ -151,6 +181,12 @@ export function HomeScreen() {
         visible={showSearchModal}
         onClose={() => setShowSearchModal(false)}
         subscriptions={subscriptions}
+      />
+
+      <StatementImportModal
+        visible={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onImport={handleImportSubscriptions}
       />
     </SafeAreaView>
   );
