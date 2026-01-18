@@ -29,10 +29,10 @@ export function CalendarHeader({
           <Text style={styles.todayText}>Today</Text>
         </TouchableOpacity>
         <View style={styles.navButtons}>
-          <TouchableOpacity style={styles.navButton} onPress={onPreviousMonth}>
+          <TouchableOpacity style={styles.navButton} onPress={onPreviousMonth} accessibilityLabel="Previous month">
             <Ionicons name="chevron-back" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.navButton} onPress={onNextMonth}>
+          <TouchableOpacity style={styles.navButton} onPress={onNextMonth} accessibilityLabel="Next month">
             <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
@@ -41,7 +41,7 @@ export function CalendarHeader({
         <TouchableOpacity style={styles.importButton} onPress={onImportPress}>
           <Ionicons name="document-text" size={20} color={colors.text} />
         </TouchableOpacity>
-        <TouchableOpacity style={styles.addButton} onPress={onAddPress}>
+        <TouchableOpacity style={styles.addButton} onPress={onAddPress} accessibilityLabel="Add subscription">
           <Ionicons name="add" size={24} color={colors.text} />
         </TouchableOpacity>
       </View>

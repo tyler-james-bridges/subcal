@@ -19,9 +19,5 @@ appId: com.subcal.app
 
 - takeScreenshot: 06-day-detail-modal
 
-# Close modal by tapping outside or X
-- tapOn:
-    text: "×"
-    optional: true
-- back:
-    optional: true
+# Close modal
+- tapOn: "Close"

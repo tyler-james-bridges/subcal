@@ -39,7 +39,7 @@ export function DayDetailModal({
         <View style={styles.container}>
           <View style={styles.header}>
             <Text style={styles.title}>{format(date, 'EEEE, MMMM d')}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+            <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close">
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
