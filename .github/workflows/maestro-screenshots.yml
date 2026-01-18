@@ -47,6 +47,10 @@ jobs:
           echo "Booting device: $DEVICE_ID"
           xcrun simctl boot "$DEVICE_ID" || true
           echo "SIMULATOR_UDID=$DEVICE_ID" >> $GITHUB_ENV
+          # Wait for simulator to be fully booted
+          echo "Waiting for simulator to be fully ready..."
+          xcrun simctl bootstatus "$DEVICE_ID" -b
+          sleep 10
 
       - name: Install Expo CLI
         run: npm install -g expo-cli @expo/ngrok
@@ -77,6 +81,8 @@ jobs:
         run: mkdir -p screenshots
 
       - name: Run Maestro Tests
+        env:
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 180000
         run: |
           export PATH="$HOME/.maestro/bin:$PATH"
           maestro test .maestro/flows/ --output screenshots/ --format junit || true
