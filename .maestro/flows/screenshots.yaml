@@ -3,13 +3,10 @@ appId: com.subcal.app
 - launchApp:
     clearState: true
 
-# Capture initial state for debugging (before any assertions)
-- takeScreenshot: screenshots/00-debug-initial-state
-
-# Wait for calendar to load
+# Wait for calendar to load (reduced timeout - app loads fast)
 - extendedWaitUntil:
     visible: "Today"
-    timeout: 10000
+    timeout: 5000
 
 # === HOME SCREEN ===
 - takeScreenshot: screenshots/01-home-calendar
@@ -36,7 +33,7 @@ appId: com.subcal.app
 
 - extendedWaitUntil:
     visible: "Add Subscription"
-    timeout: 5000
+    timeout: 2000
 
 - takeScreenshot: screenshots/05-add-subscription-modal
 
@@ -45,7 +42,7 @@ appId: com.subcal.app
 # Wait for modal to close
 - extendedWaitUntil:
     visible: "Today"
-    timeout: 3000
+    timeout: 2000
 
 # === DAY DETAIL MODAL ===
 - tapOn:
@@ -54,7 +51,7 @@ appId: com.subcal.app
 
 - extendedWaitUntil:
     visible: "Netflix"
-    timeout: 5000
+    timeout: 2000
     optional: true
 
 - takeScreenshot: screenshots/06-day-detail-modal
