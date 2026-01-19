@@ -100,7 +100,7 @@ jobs:
           retention-days: 30
 
       - name: Post Screenshots to PR
-        uses: opengisch/comment-pr-with-images@v0.0.5
+        uses: opengisch/comment-pr-with-images@0.0.5
         with:
           images: screenshots/*.png
           header: "## Screenshot Test Results"
