@@ -23,7 +23,6 @@ jobs:
 
       - name: Boot iOS Simulator (background)
         run: |
-          # Start simulator boot early in background while other setup runs
           DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 15 Pro" | head -1 | grep -oE '[0-9A-F-]{36}')
           if [ -z "$DEVICE_ID" ]; then
             DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone" | head -1 | grep -oE '[0-9A-F-]{36}')
@@ -40,14 +39,23 @@ jobs:
 
       - name: Install dependencies and Maestro
         run: |
-          # Run npm and Maestro install in parallel
           npm ci &
           NPM_PID=$!
           curl -Ls "https://get.maestro.mobile.dev" | bash
           echo "$HOME/.maestro/bin" >> $GITHUB_PATH
           wait $NPM_PID
 
+      # Cache the built .app based on native-only files
+      # JS changes won't invalidate this cache - Metro serves JS at runtime
+      - name: Cache iOS App Bundle
+        id: app-cache
+        uses: actions/cache@v4
+        with:
+          path: ios-app-cache
+          key: ios-app-debug-${{ runner.os }}-${{ hashFiles('app.json', 'package-lock.json', 'ios/Podfile.lock') }}
+
       - name: Cache CocoaPods
+        if: steps.app-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: ios/Pods
@@ -55,26 +63,20 @@ jobs:
           restore-keys: |
             pods-${{ runner.os }}-
 
-      - name: Cache Xcode Derived Data
-        uses: actions/cache@v4
-        with:
-          path: ios/build
-          key: xcode-release-${{ runner.os }}-${{ hashFiles('src/**', 'app.json', 'package.json', 'ios/Podfile.lock') }}
-          restore-keys: |
-            xcode-release-${{ runner.os }}-
-
       - name: Prebuild iOS
+        if: steps.app-cache.outputs.cache-hit != 'true'
         run: npx expo prebuild --platform ios
 
       - name: Build iOS App for Simulator
+        if: steps.app-cache.outputs.cache-hit != 'true'
         run: |
           cd ios
           WORKSPACE=$(ls -d *.xcworkspace | head -1)
           SCHEME=$(basename "$WORKSPACE" .xcworkspace)
-          # Optimized build: parallel targets, no indexing, quiet output
+          # Debug build - faster, JS served by Metro at runtime
           xcodebuild -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
-            -configuration Release \
+            -configuration Debug \
             -destination "platform=iOS Simulator,id=${{ env.SIMULATOR_UDID }}" \
             -derivedDataPath build \
             -parallelizeTargets \
@@ -82,12 +84,38 @@ jobs:
             GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
             -quiet \
             build
+          # Cache the built app
+          mkdir -p ../ios-app-cache
+          APP_PATH=$(find build -name "*.app" -type d | head -1)
+          cp -R "$APP_PATH" ../ios-app-cache/
+
+      - name: Restore cached app
+        if: steps.app-cache.outputs.cache-hit == 'true'
+        run: |
+          echo "Using cached iOS app bundle (native code unchanged)"
+          mkdir -p ios/build/Build/Products/Debug-iphonesimulator
+          cp -R ios-app-cache/*.app ios/build/Build/Products/Debug-iphonesimulator/
+
+      - name: Start Metro bundler
+        run: |
+          # Start Metro to serve JS bundle for Debug build
+          npx expo start --port 8081 --max-workers 2 &
+          echo "METRO_PID=$!" >> $GITHUB_ENV
+          # Wait for Metro to be ready
+          echo "Waiting for Metro bundler..."
+          for i in {1..30}; do
+            if curl -s http://localhost:8081/status 2>/dev/null | grep -q "packager-status:running"; then
+              echo "Metro is ready!"
+              break
+            fi
+            sleep 1
+          done
 
       - name: Wait for Simulator and Install App
         run: |
-          # Ensure simulator is fully booted
           xcrun simctl bootstatus "${{ env.SIMULATOR_UDID }}" -b
           APP_PATH=$(find ios/build -name "*.app" -type d | head -1)
+          echo "Installing app from: $APP_PATH"
           xcrun simctl install "${{ env.SIMULATOR_UDID }}" "$APP_PATH"
 
       - name: Run Maestro Tests
@@ -97,6 +125,13 @@ jobs:
           mkdir -p screenshots
           export PATH="$HOME/.maestro/bin:$PATH"
           maestro test .maestro/flows/screenshots.yaml --output screenshots/report.xml --format junit --debug-output screenshots/ || true
+
+      - name: Stop Metro
+        if: always()
+        run: |
+          if [ -n "$METRO_PID" ]; then
+            kill $METRO_PID 2>/dev/null || true
+          fi
 
       - name: Upload Screenshots as Artifact
         uses: actions/upload-artifact@v4
@@ -131,13 +166,11 @@ jobs:
 
             console.log(`Found ${files.length} screenshots: ${files.join(', ')}`);
 
-            // Create a branch to store screenshots
             const prNumber = context.issue.number;
             const branchName = `screenshots/pr-${prNumber}`;
             const owner = context.repo.owner;
             const repo = context.repo.repo;
 
-            // Get the default branch's latest commit as base
             const { data: refData } = await github.rest.repos.get({ owner, repo });
             const defaultBranch = refData.default_branch;
             const { data: defaultRef } = await github.rest.git.getRef({
@@ -147,7 +180,6 @@ jobs:
             });
             const baseSha = defaultRef.object.sha;
 
-            // Try to create the branch (or get existing)
             try {
               await github.rest.git.createRef({
                 owner,
@@ -164,7 +196,6 @@ jobs:
               }
             }
 
-            // Upload each screenshot to the branch
             const imageUrls = [];
             for (const file of files) {
               const filePath = path.join(screenshotsDir, file);
@@ -172,7 +203,6 @@ jobs:
               const base64Content = content.toString('base64');
               const repoPath = `pr-${prNumber}/${file}`;
 
-              // Check if file exists and get its SHA
               let fileSha;
               try {
                 const { data: existingFile } = await github.rest.repos.getContent({
@@ -201,7 +231,6 @@ jobs:
               console.log(`Uploaded ${file}`);
             }
 
-            // Build the comment body with embedded images
             const imageMarkdown = imageUrls
               .map(({ name, url }) => `### ${name}\n![${name}](${url})`)
               .join('\n\n');
@@ -215,7 +244,6 @@ jobs:
             ---
             *Generated by Maestro Screenshot Tests*`;
 
-            // Find existing bot comment
             const { data: comments } = await github.rest.issues.listComments({
               owner,
               repo,
