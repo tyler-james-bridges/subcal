@@ -7,7 +7,7 @@ on:
 jobs:
   screenshot-tests:
     runs-on: macos-14
-    timeout-minutes: 30
+    timeout-minutes: 20
     permissions:
       contents: write
       pull-requests: write
@@ -23,58 +23,64 @@ jobs:
 
       - name: Boot iOS Simulator (background)
         run: |
-          # Start simulator boot early in background while other setup runs
           DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone 15 Pro" | head -1 | grep -oE '[0-9A-F-]{36}')
           if [ -z "$DEVICE_ID" ]; then
             DEVICE_ID=$(xcrun simctl list devices available | grep "iPhone" | head -1 | grep -oE '[0-9A-F-]{36}')
           fi
-          echo "Booting device: $DEVICE_ID"
           xcrun simctl boot "$DEVICE_ID" 2>/dev/null &
           echo "SIMULATOR_UDID=$DEVICE_ID" >> $GITHUB_ENV
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
         with:
-          node-version: '20'
-          cache: 'npm'
+          bun-version: latest
 
-      - name: Install dependencies and Maestro
-        run: |
-          # Run npm and Maestro install in parallel
-          npm ci &
-          NPM_PID=$!
-          curl -Ls "https://get.maestro.mobile.dev" | bash
-          echo "$HOME/.maestro/bin" >> $GITHUB_PATH
-          wait $NPM_PID
+      - name: Cache Maestro
+        id: maestro-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.maestro
+          key: maestro-${{ runner.os }}-v1
+
+      - name: Install Maestro
+        if: steps.maestro-cache.outputs.cache-hit != 'true'
+        run: curl -Ls "https://get.maestro.mobile.dev" | bash
+
+      - name: Add Maestro to PATH
+        run: echo "$HOME/.maestro/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      # Cache the built .app based on native-only files
+      - name: Cache iOS App Bundle
+        id: app-cache
+        uses: actions/cache@v4
+        with:
+          path: ios-app-cache
+          key: ios-app-debug-${{ runner.os }}-${{ hashFiles('app.json', 'bun.lockb', 'package-lock.json', 'ios/Podfile.lock') }}
 
       - name: Cache CocoaPods
+        if: steps.app-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: ios/Pods
           key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
-          restore-keys: |
-            pods-${{ runner.os }}-
-
-      - name: Cache Xcode Derived Data
-        uses: actions/cache@v4
-        with:
-          path: ios/build
-          key: xcode-release-${{ runner.os }}-${{ hashFiles('src/**', 'app.json', 'package.json', 'ios/Podfile.lock') }}
-          restore-keys: |
-            xcode-release-${{ runner.os }}-
+          restore-keys: pods-${{ runner.os }}-
 
       - name: Prebuild iOS
-        run: npx expo prebuild --platform ios
+        if: steps.app-cache.outputs.cache-hit != 'true'
+        run: bunx expo prebuild --platform ios
 
       - name: Build iOS App for Simulator
+        if: steps.app-cache.outputs.cache-hit != 'true'
         run: |
           cd ios
           WORKSPACE=$(ls -d *.xcworkspace | head -1)
           SCHEME=$(basename "$WORKSPACE" .xcworkspace)
-          # Optimized build: parallel targets, no indexing, quiet output
           xcodebuild -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
-            -configuration Release \
+            -configuration Debug \
             -destination "platform=iOS Simulator,id=${{ env.SIMULATOR_UDID }}" \
             -derivedDataPath build \
             -parallelizeTargets \
@@ -82,23 +88,41 @@ jobs:
             GCC_WARN_INHIBIT_ALL_WARNINGS=YES \
             -quiet \
             build
+          mkdir -p ../ios-app-cache
+          cp -R "$(find build -name '*.app' -type d | head -1)" ../ios-app-cache/
 
-      - name: Wait for Simulator and Install App
+      - name: Restore cached app
+        if: steps.app-cache.outputs.cache-hit == 'true'
         run: |
-          # Ensure simulator is fully booted
+          echo "⚡ Using cached iOS app (native unchanged)"
+          mkdir -p ios/build/Build/Products/Debug-iphonesimulator
+          cp -R ios-app-cache/*.app ios/build/Build/Products/Debug-iphonesimulator/
+
+      - name: Start Metro bundler
+        run: |
+          bunx expo start --port 8081 --max-workers 2 &
+          for i in {1..20}; do
+            curl -s http://localhost:8081/status 2>/dev/null | grep -q "packager-status:running" && break
+            sleep 1
+          done
+
+      - name: Install App
+        run: |
           xcrun simctl bootstatus "${{ env.SIMULATOR_UDID }}" -b
-          APP_PATH=$(find ios/build -name "*.app" -type d | head -1)
-          xcrun simctl install "${{ env.SIMULATOR_UDID }}" "$APP_PATH"
+          xcrun simctl install "${{ env.SIMULATOR_UDID }}" "$(find ios/build -name '*.app' -type d | head -1)"
 
       - name: Run Maestro Tests
         env:
-          MAESTRO_DRIVER_STARTUP_TIMEOUT: 180000
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 120000
         run: |
           mkdir -p screenshots
-          export PATH="$HOME/.maestro/bin:$PATH"
           maestro test .maestro/flows/screenshots.yaml --output screenshots/report.xml --format junit --debug-output screenshots/ || true
 
-      - name: Upload Screenshots as Artifact
+      - name: Stop Metro
+        if: always()
+        run: pkill -f "expo start" || true
+
+      - name: Upload Screenshots
         uses: actions/upload-artifact@v4
         with:
           name: maestro-screenshots
@@ -111,136 +135,59 @@ jobs:
           script: |
             const fs = require('fs');
             const path = require('path');
-
             const screenshotsDir = 'screenshots';
+
             let files = [];
-
             try {
-              files = fs.readdirSync(screenshotsDir)
-                .filter(f => f.endsWith('.png'))
-                .sort();
-            } catch (e) {
-              console.log('No screenshots directory found');
-              return;
-            }
+              files = fs.readdirSync(screenshotsDir).filter(f => f.endsWith('.png')).sort();
+            } catch (e) { return; }
 
-            if (files.length === 0) {
-              console.log('No screenshot files found');
-              return;
-            }
+            if (files.length === 0) return;
 
-            console.log(`Found ${files.length} screenshots: ${files.join(', ')}`);
-
-            // Create a branch to store screenshots
             const prNumber = context.issue.number;
             const branchName = `screenshots/pr-${prNumber}`;
-            const owner = context.repo.owner;
-            const repo = context.repo.repo;
+            const { owner, repo } = context.repo;
 
-            // Get the default branch's latest commit as base
             const { data: refData } = await github.rest.repos.get({ owner, repo });
-            const defaultBranch = refData.default_branch;
             const { data: defaultRef } = await github.rest.git.getRef({
-              owner,
-              repo,
-              ref: `heads/${defaultBranch}`,
+              owner, repo, ref: `heads/${refData.default_branch}`,
             });
-            const baseSha = defaultRef.object.sha;
 
-            // Try to create the branch (or get existing)
             try {
               await github.rest.git.createRef({
-                owner,
-                repo,
-                ref: `refs/heads/${branchName}`,
-                sha: baseSha,
+                owner, repo, ref: `refs/heads/${branchName}`, sha: defaultRef.object.sha,
               });
-              console.log(`Created branch ${branchName}`);
-            } catch (e) {
-              if (e.status === 422) {
-                console.log(`Branch ${branchName} already exists`);
-              } else {
-                throw e;
-              }
-            }
+            } catch (e) { if (e.status !== 422) throw e; }
 
-            // Upload each screenshot to the branch
             const imageUrls = [];
             for (const file of files) {
-              const filePath = path.join(screenshotsDir, file);
-              const content = fs.readFileSync(filePath);
-              const base64Content = content.toString('base64');
+              const content = fs.readFileSync(path.join(screenshotsDir, file));
               const repoPath = `pr-${prNumber}/${file}`;
 
-              // Check if file exists and get its SHA
               let fileSha;
               try {
-                const { data: existingFile } = await github.rest.repos.getContent({
-                  owner,
-                  repo,
-                  path: repoPath,
-                  ref: branchName,
-                });
-                fileSha = existingFile.sha;
-              } catch (e) {
-                // File doesn't exist yet
-              }
+                const { data } = await github.rest.repos.getContent({ owner, repo, path: repoPath, ref: branchName });
+                fileSha = data.sha;
+              } catch (e) {}
 
               await github.rest.repos.createOrUpdateFileContents({
-                owner,
-                repo,
-                path: repoPath,
+                owner, repo, path: repoPath,
                 message: `Add screenshot ${file} for PR #${prNumber}`,
-                content: base64Content,
+                content: content.toString('base64'),
                 branch: branchName,
                 ...(fileSha && { sha: fileSha }),
               });
 
-              const rawUrl = `https://raw.githubusercontent.com/${owner}/${repo}/${branchName}/${repoPath}`;
-              imageUrls.push({ name: file, url: rawUrl });
-              console.log(`Uploaded ${file}`);
+              imageUrls.push({ name: file, url: `https://raw.githubusercontent.com/${owner}/${repo}/${branchName}/${repoPath}` });
             }
 
-            // Build the comment body with embedded images
-            const imageMarkdown = imageUrls
-              .map(({ name, url }) => `### ${name}\n![${name}](${url})`)
-              .join('\n\n');
+            const body = `## Screenshot Test Results\n\nMaestro captured **${files.length}** screenshot(s) from this PR.\n\n${imageUrls.map(({ name, url }) => `### ${name}\n![${name}](${url})`).join('\n\n')}\n\n---\n*Generated by Maestro Screenshot Tests*`;
 
-            const body = `## Screenshot Test Results
-
-            Maestro captured **${files.length}** screenshot(s) from this PR.
-
-            ${imageMarkdown}
-
-            ---
-            *Generated by Maestro Screenshot Tests*`;
-
-            // Find existing bot comment
-            const { data: comments } = await github.rest.issues.listComments({
-              owner,
-              repo,
-              issue_number: prNumber,
-            });
-
-            const botComment = comments.find(c =>
-              c.user.type === 'Bot' &&
-              c.body.includes('Screenshot Test Results')
-            );
+            const { data: comments } = await github.rest.issues.listComments({ owner, repo, issue_number: prNumber });
+            const botComment = comments.find(c => c.user.type === 'Bot' && c.body.includes('Screenshot Test Results'));
 
             if (botComment) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: botComment.id,
-                body,
-              });
-              console.log('Updated existing comment');
+              await github.rest.issues.updateComment({ owner, repo, comment_id: botComment.id, body });
             } else {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number: prNumber,
-                body,
-              });
-              console.log('Created new comment');
+              await github.rest.issues.createComment({ owner, repo, issue_number: prNumber, body });
             }
