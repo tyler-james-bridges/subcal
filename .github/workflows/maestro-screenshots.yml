@@ -58,9 +58,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ios/build
-          key: xcode-${{ runner.os }}-${{ hashFiles('src/**', 'app.json', 'package.json') }}
+          key: xcode-release-${{ runner.os }}-${{ hashFiles('src/**', 'app.json', 'package.json') }}
           restore-keys: |
-            xcode-${{ runner.os }}-
+            xcode-release-${{ runner.os }}-
 
       - name: Prebuild iOS
         run: npx expo prebuild --platform ios
@@ -70,9 +70,10 @@ jobs:
           cd ios
           WORKSPACE=$(ls -d *.xcworkspace | head -1)
           SCHEME=$(basename "$WORKSPACE" .xcworkspace)
+          # Use Release configuration to embed the JS bundle (no Metro server needed)
           xcodebuild -workspace "$WORKSPACE" \
             -scheme "$SCHEME" \
-            -configuration Debug \
+            -configuration Release \
             -destination "platform=iOS Simulator,id=${{ env.SIMULATOR_UDID }}" \
             -derivedDataPath build \
             build
