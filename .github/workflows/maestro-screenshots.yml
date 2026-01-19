@@ -52,21 +52,22 @@ jobs:
       - name: Install dependencies
         run: bun install --frozen-lockfile
 
-      # Cache the built .app based on native-only files
+      # Cache the built .app based on native-affecting files (only committed files!)
+      # ios/ is gitignored, so we use app.json + package.json for native deps
       - name: Cache iOS App Bundle
         id: app-cache
         uses: actions/cache@v4
         with:
           path: ios-app-cache
-          key: ios-app-debug-${{ runner.os }}-${{ hashFiles('app.json', 'bun.lockb', 'package-lock.json', 'ios/Podfile.lock') }}
+          key: ios-app-v2-${{ runner.os }}-${{ hashFiles('app.json', 'package.json') }}
 
       - name: Cache CocoaPods
         if: steps.app-cache.outputs.cache-hit != 'true'
         uses: actions/cache@v4
         with:
           path: ios/Pods
-          key: pods-${{ runner.os }}-${{ hashFiles('ios/Podfile.lock') }}
-          restore-keys: pods-${{ runner.os }}-
+          key: pods-v2-${{ runner.os }}-${{ hashFiles('package.json') }}
+          restore-keys: pods-v2-${{ runner.os }}-
 
       - name: Prebuild iOS
         if: steps.app-cache.outputs.cache-hit != 'true'
