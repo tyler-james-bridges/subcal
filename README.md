@@ -2,7 +2,7 @@
 
 A beautiful iOS app to track and manage your subscription renewals with a calendar view.
 
-![Home Calendar](https://raw.githubusercontent.com/tyler-james-bridges/subcal/screenshots/pr-11/pr-11/01-home-calendar.png)
+![Home Calendar](https://raw.githubusercontent.com/tyler-james-bridges/subcal/screenshots/pr-10/pr-10/01-home-calendar.png)
 
 ## Features
 
@@ -18,7 +18,7 @@ A beautiful iOS app to track and manage your subscription renewals with a calend
 
 | Home | Add Subscription | Day Detail |
 |------|------------------|------------|
-| ![Home](https://raw.githubusercontent.com/tyler-james-bridges/subcal/screenshots/pr-11/pr-11/01-home-calendar.png) | ![Add](https://raw.githubusercontent.com/tyler-james-bridges/subcal/screenshots/pr-11/pr-11/05-add-subscription-modal.png) | ![Detail](https://raw.githubusercontent.com/tyler-james-bridges/subcal/screenshots/pr-11/pr-11/06-day-detail-modal.png) |
+| ![Home](https://raw.githubusercontent.com/tyler-james-bridges/subcal/screenshots/pr-10/pr-10/01-home-calendar.png) | ![Add](https://raw.githubusercontent.com/tyler-james-bridges/subcal/screenshots/pr-10/pr-10/05-add-subscription-modal.png) | ![Detail](https://raw.githubusercontent.com/tyler-james-bridges/subcal/screenshots/pr-10/pr-10/06-day-detail-modal.png) |
 
 ## Getting Started
 
