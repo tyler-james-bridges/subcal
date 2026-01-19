@@ -56,4 +56,6 @@ appId: com.subcal.app
 
 - takeScreenshot: screenshots/06-day-detail-modal
 
-- tapOn: "Close"
+# Tap outside modal to dismiss (tap on overlay area at top of screen)
+- tapOn:
+    point: "50%,20%"

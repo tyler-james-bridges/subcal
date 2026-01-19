@@ -15,7 +15,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.subcal.app",
-      "appleTeamId": "4WXA94CNKK"
+      "appleTeamId": "4WXA94CNKK",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -27,6 +30,11 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "150892b2-54ab-481d-9854-f35497b81ad8"
+      }
     }
   }
 }

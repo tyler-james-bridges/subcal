@@ -1,40 +1,25 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, borderRadius } from '../constants';
 import { formatCurrency } from '../utils';
 
 interface CalendarFooterProps {
   monthlyTotal: number;
   currency?: string;
-  onMenuPress?: () => void;
   onSearchPress?: () => void;
-  onExportPress?: () => void;
-  onSettingsPress?: () => void;
 }
 
 export function CalendarFooter({
   monthlyTotal,
   currency = 'USD',
-  onMenuPress,
   onSearchPress,
-  onExportPress,
-  onSettingsPress,
 }: CalendarFooterProps) {
   return (
     <View style={styles.container}>
       <View style={styles.tools}>
-        <TouchableOpacity style={styles.toolButton} onPress={onMenuPress}>
-          <Ionicons name="ellipsis-vertical" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
         <TouchableOpacity style={styles.toolButton} onPress={onSearchPress}>
           <Ionicons name="search" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.toolButton} onPress={onExportPress}>
-          <Ionicons name="download-outline" size={18} color={colors.textSecondary} />
-        </TouchableOpacity>
-        <TouchableOpacity style={styles.toolButton} onPress={onSettingsPress}>
-          <MaterialCommunityIcons name="tune-variant" size={18} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
       <View style={styles.totalContainer}>
