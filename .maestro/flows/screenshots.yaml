@@ -3,6 +3,9 @@ appId: com.subcal.app
 - launchApp:
     clearState: true
 
+# Capture initial state for debugging (before any assertions)
+- takeScreenshot: screenshots/00-debug-initial-state
+
 # Wait for calendar to load
 - extendedWaitUntil:
     visible: "Today"
