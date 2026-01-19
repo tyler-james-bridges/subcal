@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,11 +9,14 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ServiceIcon as ServiceIconType, BillingCycle } from '../types';
 import { colors, spacing, borderRadius, fontSize, availableServices, serviceConfigs } from '../constants';
 import { ServiceIcon } from './ServiceIcon';
+import { lightHaptic, parseNaturalLanguageSubscription, isNaturalLanguageInput } from '../utils';
+import { addDays, format } from 'date-fns';
 
 interface AddSubscriptionModalProps {
   visible: boolean;
@@ -28,6 +31,7 @@ interface AddSubscriptionModalProps {
     icon: ServiceIconType;
     color: string;
     isActive: boolean;
+    trialEndDate?: string;
   }) => void;
 }
 
@@ -37,11 +41,47 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
   const [billingDay, setBillingDay] = useState('1');
   const [selectedService, setSelectedService] = useState<ServiceIconType>('custom');
+  const [quickInput, setQuickInput] = useState('');
+  const [hasTrial, setHasTrial] = useState(false);
+  const [trialDays, setTrialDays] = useState('7');
+
+  // Reset form when modal closes
+  useEffect(() => {
+    if (!visible) {
+      setName('');
+      setPrice('');
+      setBillingCycle('monthly');
+      setBillingDay('1');
+      setSelectedService('custom');
+      setQuickInput('');
+      setHasTrial(false);
+      setTrialDays('7');
+    }
+  }, [visible]);
+
+  // Parse natural language input
+  useEffect(() => {
+    if (quickInput && isNaturalLanguageInput(quickInput)) {
+      const parsed = parseNaturalLanguageSubscription(quickInput);
+      if (parsed.name) setName(parsed.name);
+      if (parsed.price) setPrice(parsed.price.toString());
+      if (parsed.billingCycle) setBillingCycle(parsed.billingCycle);
+      if (parsed.billingDay) setBillingDay(parsed.billingDay.toString());
+      if (parsed.icon) {
+        setSelectedService(parsed.icon);
+      }
+    }
+  }, [quickInput]);
 
   const handleAdd = () => {
     if (!name.trim() || !price.trim()) return;
 
+    lightHaptic();
     const config = serviceConfigs[selectedService];
+    const trialEndDate = hasTrial
+      ? addDays(new Date(), parseInt(trialDays, 10) || 7).toISOString()
+      : undefined;
+
     onAdd({
       name: name.trim(),
       price: parseFloat(price),
@@ -52,6 +92,7 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
       icon: selectedService,
       color: config.color,
       isActive: true,
+      trialEndDate,
     });
 
     // Reset form
@@ -60,15 +101,28 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
     setBillingCycle('monthly');
     setBillingDay('1');
     setSelectedService('custom');
+    setQuickInput('');
+    setHasTrial(false);
+    setTrialDays('7');
     onClose();
   };
 
   const handleServiceSelect = (service: ServiceIconType) => {
+    lightHaptic();
     setSelectedService(service);
     if (service !== 'custom') {
       setName(serviceConfigs[service].name);
     }
   };
+
+  const handleCycleChange = (cycle: BillingCycle) => {
+    lightHaptic();
+    setBillingCycle(cycle);
+  };
+
+  const trialEndDatePreview = hasTrial
+    ? format(addDays(new Date(), parseInt(trialDays, 10) || 7), 'MMM d, yyyy')
+    : null;
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -85,6 +139,19 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            {/* Quick Natural Language Input */}
+            <Text style={styles.label}>Quick Add</Text>
+            <TextInput
+              style={styles.input}
+              value={quickInput}
+              onChangeText={setQuickInput}
+              placeholder='e.g., "Netflix $15.99 monthly on the 15th"'
+              placeholderTextColor={colors.textMuted}
+            />
+            <Text style={styles.hint}>
+              Type naturally and we will fill in the details below
+            </Text>
+
             {/* Service Selection */}
             <Text style={styles.label}>Service</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.serviceList}>
@@ -124,6 +191,66 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
               keyboardType="decimal-pad"
             />
 
+            {/* Free Trial Toggle */}
+            <View style={styles.trialRow}>
+              <View style={styles.trialLabelContainer}>
+                <Text style={styles.label}>Free Trial</Text>
+                <Text style={styles.trialHint}>Track when your trial ends</Text>
+              </View>
+              <Switch
+                value={hasTrial}
+                onValueChange={(value) => {
+                  lightHaptic();
+                  setHasTrial(value);
+                }}
+                trackColor={{ false: colors.surface, true: colors.trial }}
+                thumbColor={colors.text}
+              />
+            </View>
+
+            {hasTrial && (
+              <View style={styles.trialDaysContainer}>
+                <Text style={styles.label}>Trial Length (days)</Text>
+                <View style={styles.trialDaysRow}>
+                  {['7', '14', '30'].map((days) => (
+                    <TouchableOpacity
+                      key={days}
+                      style={[
+                        styles.trialDayOption,
+                        trialDays === days && styles.trialDayOptionSelected,
+                      ]}
+                      onPress={() => {
+                        lightHaptic();
+                        setTrialDays(days);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.trialDayText,
+                          trialDays === days && styles.trialDayTextSelected,
+                        ]}
+                      >
+                        {days}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                  <TextInput
+                    style={[styles.trialDaysInput]}
+                    value={trialDays}
+                    onChangeText={setTrialDays}
+                    keyboardType="number-pad"
+                    placeholder="Custom"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                </View>
+                {trialEndDatePreview && (
+                  <Text style={styles.trialEndPreview}>
+                    Trial ends: {trialEndDatePreview}
+                  </Text>
+                )}
+              </View>
+            )}
+
             {/* Billing Cycle */}
             <Text style={styles.label}>Billing Cycle</Text>
             <View style={styles.cycleContainer}>
@@ -132,7 +259,7 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
                   styles.cycleOption,
                   billingCycle === 'monthly' && styles.cycleOptionSelected,
                 ]}
-                onPress={() => setBillingCycle('monthly')}
+                onPress={() => handleCycleChange('monthly')}
               >
                 <View style={[styles.cycleDot, styles.monthlyDot]} />
                 <Text
@@ -149,7 +276,7 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
                   styles.cycleOption,
                   billingCycle === 'yearly' && styles.cycleOptionSelected,
                 ]}
-                onPress={() => setBillingCycle('yearly')}
+                onPress={() => handleCycleChange('yearly')}
               >
                 <View style={[styles.cycleDot, styles.yearlyDot]} />
                 <Text
@@ -230,6 +357,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
     marginTop: spacing.md,
   },
+  hint: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: spacing.xs,
+  },
   serviceList: {
     flexDirection: 'row',
     marginBottom: spacing.sm,
@@ -260,6 +392,67 @@ const styles = StyleSheet.create({
     color: colors.text,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  trialRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.lg,
+    paddingVertical: spacing.sm,
+  },
+  trialLabelContainer: {
+    flex: 1,
+  },
+  trialHint: {
+    fontSize: fontSize.xs,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+  trialDaysContainer: {
+    marginTop: spacing.sm,
+  },
+  trialDaysRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  trialDayOption: {
+    flex: 1,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  trialDayOptionSelected: {
+    borderColor: colors.trial,
+    backgroundColor: `${colors.trial}22`,
+  },
+  trialDayText: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  trialDayTextSelected: {
+    color: colors.trial,
+    fontWeight: '600',
+  },
+  trialDaysInput: {
+    flex: 1,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    fontSize: fontSize.md,
+    color: colors.text,
+    borderWidth: 1,
+    borderColor: colors.border,
+    textAlign: 'center',
+  },
+  trialEndPreview: {
+    fontSize: fontSize.sm,
+    color: colors.trial,
+    marginTop: spacing.sm,
+    fontWeight: '500',
   },
   cycleContainer: {
     flexDirection: 'row',

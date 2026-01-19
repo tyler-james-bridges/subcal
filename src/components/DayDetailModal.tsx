@@ -13,7 +13,7 @@ import { format } from 'date-fns';
 import { CalendarDay, Subscription } from '../types';
 import { colors, spacing, borderRadius, fontSize } from '../constants';
 import { ServiceIcon } from './ServiceIcon';
-import { formatCurrency } from '../utils';
+import { formatCurrency, getTrialDaysRemaining, mediumHaptic } from '../utils';
 
 interface DayDetailModalProps {
   visible: boolean;
@@ -33,6 +33,16 @@ export function DayDetailModal({
   if (!day) return null;
 
   const { date, subscriptions } = day;
+
+  const handleDelete = (id: string) => {
+    mediumHaptic();
+    onDeleteSubscription(id);
+  };
+
+  const handleToggle = (id: string) => {
+    mediumHaptic();
+    onToggleSubscription(id);
+  };
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
@@ -56,8 +66,8 @@ export function DayDetailModal({
                     <SubscriptionCard
                       key={subscription.id}
                       subscription={subscription}
-                      onDelete={() => onDeleteSubscription(subscription.id)}
-                      onToggle={() => onToggleSubscription(subscription.id)}
+                      onDelete={() => handleDelete(subscription.id)}
+                      onToggle={() => handleToggle(subscription.id)}
                     />
                   ))
                 )}
@@ -77,7 +87,8 @@ interface SubscriptionCardProps {
 }
 
 function SubscriptionCard({ subscription, onDelete, onToggle }: SubscriptionCardProps) {
-  const { name, price, currency, billingCycle, icon, isActive } = subscription;
+  const { name, price, currency, billingCycle, icon, isActive, trialEndDate } = subscription;
+  const trialDaysRemaining = getTrialDaysRemaining(trialEndDate);
 
   return (
     <View style={[styles.card, !isActive && styles.cardInactive]}>
@@ -85,15 +96,35 @@ function SubscriptionCard({ subscription, onDelete, onToggle }: SubscriptionCard
         <ServiceIcon service={icon} size={44} />
         <View style={styles.cardInfo}>
           <Text style={[styles.cardName, !isActive && styles.textInactive]}>{name}</Text>
+          {trialDaysRemaining !== null && (
+            <View style={styles.trialBanner}>
+              <Ionicons name="time-outline" size={12} color={colors.trial} />
+              <Text style={styles.trialText}>
+                {trialDaysRemaining === 0
+                  ? 'Trial ends today!'
+                  : trialDaysRemaining === 1
+                    ? 'Trial ends in 1 day'
+                    : `Trial ends in ${trialDaysRemaining} days`}
+              </Text>
+            </View>
+          )}
           <View style={styles.cardMeta}>
             <View
               style={[
                 styles.cycleBadge,
-                billingCycle === 'monthly' ? styles.monthlyBadge : styles.yearlyBadge,
+                trialDaysRemaining !== null
+                  ? styles.trialBadge
+                  : billingCycle === 'monthly'
+                    ? styles.monthlyBadge
+                    : styles.yearlyBadge,
               ]}
             >
               <Text style={styles.cycleBadgeText}>
-                {billingCycle === 'monthly' ? 'Monthly' : 'Yearly'}
+                {trialDaysRemaining !== null
+                  ? 'Trial'
+                  : billingCycle === 'monthly'
+                    ? 'Monthly'
+                    : 'Yearly'}
               </Text>
             </View>
             <Text style={styles.cardPrice}>
@@ -192,6 +223,17 @@ const styles = StyleSheet.create({
   textInactive: {
     textDecorationLine: 'line-through',
   },
+  trialBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginBottom: spacing.xs,
+  },
+  trialText: {
+    fontSize: fontSize.xs,
+    fontWeight: '600',
+    color: colors.trial,
+  },
   cardMeta: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -201,6 +243,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.sm,
+  },
+  trialBadge: {
+    backgroundColor: `${colors.trial}33`,
   },
   monthlyBadge: {
     backgroundColor: `${colors.monthly}33`,

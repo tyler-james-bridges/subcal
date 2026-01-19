@@ -147,3 +147,31 @@ export function getSpendingStats(subscriptions: Subscription[]) {
     yearly: getYearlyTotal(active),
   };
 }
+
+/**
+ * Calculate the number of days remaining in a free trial
+ * Returns null if no trial or trial has ended
+ */
+export function getTrialDaysRemaining(trialEndDate: string | undefined): number | null {
+  if (!trialEndDate) return null;
+
+  const endDate = new Date(trialEndDate);
+  const today = new Date();
+
+  // Reset to start of day for accurate comparison
+  today.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  const diffTime = endDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays >= 0 ? diffDays : null;
+}
+
+/**
+ * Check if a subscription is currently in trial period
+ */
+export function isInTrialPeriod(subscription: Subscription): boolean {
+  const daysRemaining = getTrialDaysRemaining(subscription.trialEndDate);
+  return daysRemaining !== null && daysRemaining >= 0;
+}
