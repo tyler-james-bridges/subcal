@@ -4,6 +4,7 @@ export * from './CalendarGrid';
 export * from './CalendarHeader';
 export * from './CalendarLegend';
 export * from './CalendarFooter';
+export * from './StatsSection';
 export * from './AddSubscriptionModal';
 export * from './DayDetailModal';
 export * from './SearchFilterModal';
