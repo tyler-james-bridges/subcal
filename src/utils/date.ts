@@ -109,3 +109,41 @@ export function getSubscriptionStats(subscriptions: Subscription[]) {
     monthlyTotal: getMonthlyTotal(active),
   };
 }
+
+/**
+ * Calculate weekly spending based on billing cycles
+ * Weekly = monthly / 4.33 (average weeks per month)
+ */
+export function getWeeklyTotal(subscriptions: Subscription[]): number {
+  const monthlyTotal = getMonthlyTotal(subscriptions);
+  return monthlyTotal / 4.33;
+}
+
+/**
+ * Calculate yearly spending based on billing cycles
+ */
+export function getYearlyTotal(subscriptions: Subscription[]): number {
+  return subscriptions.reduce((total, sub) => {
+    if (!sub.isActive) return total;
+
+    if (sub.billingCycle === 'yearly') {
+      return total + sub.price;
+    } else {
+      // Convert monthly to yearly
+      return total + sub.price * 12;
+    }
+  }, 0);
+}
+
+/**
+ * Get comprehensive spending stats
+ */
+export function getSpendingStats(subscriptions: Subscription[]) {
+  const active = subscriptions.filter((s) => s.isActive);
+
+  return {
+    weekly: getWeeklyTotal(active),
+    monthly: getMonthlyTotal(active),
+    yearly: getYearlyTotal(active),
+  };
+}
