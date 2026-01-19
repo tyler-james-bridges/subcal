@@ -25,7 +25,7 @@ export function CalendarHeader({
     <View style={styles.container}>
       <View style={styles.leftSection}>
         <Text style={styles.monthText}>{formatMonthYear(currentDate)}</Text>
-        <TouchableOpacity style={styles.todayButton} onPress={onToday}>
+        <TouchableOpacity style={styles.todayButton} onPress={onToday} accessibilityLabel="Today">
           <Text style={styles.todayText}>Today</Text>
         </TouchableOpacity>
         <View style={styles.navButtons}>
