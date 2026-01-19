@@ -1,5 +1,15 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, StyleSheet, SafeAreaView, StatusBar, ActivityIndicator, Alert } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  SafeAreaView,
+  StatusBar,
+  ActivityIndicator,
+  Alert,
+  ScrollView,
+  RefreshControl,
+} from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { CalendarDay as CalendarDayType, DetectedSubscription } from '../types';
 import { colors } from '../constants';
 import {
@@ -7,6 +17,7 @@ import {
   CalendarGrid,
   CalendarLegend,
   CalendarFooter,
+  StatsSection,
   AddSubscriptionModal,
   DayDetailModal,
   SearchFilterModal,
@@ -18,6 +29,7 @@ import {
   goToNextMonth,
   goToPreviousMonth,
   getSubscriptionStats,
+  getSpendingStats,
 } from '../utils';
 
 export function HomeScreen() {
@@ -27,6 +39,7 @@ export function HomeScreen() {
   const [selectedDay, setSelectedDay] = useState<CalendarDayType | null>(null);
   const [showDayDetail, setShowDayDetail] = useState(false);
   const [showSearchModal, setShowSearchModal] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const {
     subscriptions,
@@ -35,6 +48,7 @@ export function HomeScreen() {
     addSubscriptions,
     deleteSubscription,
     toggleSubscription,
+    refreshSubscriptions,
   } = useSubscriptions();
 
   const calendarDays = useMemo(
@@ -43,6 +57,7 @@ export function HomeScreen() {
   );
 
   const stats = useMemo(() => getSubscriptionStats(subscriptions), [subscriptions]);
+  const spendingStats = useMemo(() => getSpendingStats(subscriptions), [subscriptions]);
 
   const handlePreviousMonth = useCallback(() => {
     setCurrentDate((prev) => goToPreviousMonth(prev));
@@ -55,6 +70,19 @@ export function HomeScreen() {
   const handleToday = useCallback(() => {
     setCurrentDate(new Date());
   }, []);
+
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      // Trigger haptic feedback at the start of refresh
+      await Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await refreshSubscriptions();
+    } catch (error) {
+      console.error('Failed to refresh:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [refreshSubscriptions]);
 
   const handleDayPress = useCallback((day: CalendarDayType) => {
     setSelectedDay(day);
@@ -143,25 +171,51 @@ export function HomeScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={colors.background} />
-      <View style={styles.card}>
-        <CalendarHeader
-          currentDate={currentDate}
-          onPreviousMonth={handlePreviousMonth}
-          onNextMonth={handleNextMonth}
-          onToday={handleToday}
-          onAddPress={() => setShowAddModal(true)}
-          onImportPress={() => setShowImportModal(true)}
-        />
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+            progressBackgroundColor={colors.surface}
+          />
+        }
+      >
+        <View style={styles.card}>
+          <CalendarHeader
+            currentDate={currentDate}
+            onPreviousMonth={handlePreviousMonth}
+            onNextMonth={handleNextMonth}
+            onToday={handleToday}
+            onAddPress={() => setShowAddModal(true)}
+            onImportPress={() => setShowImportModal(true)}
+          />
 
-        <CalendarGrid days={calendarDays} onDayPress={handleDayPress} />
+          <CalendarGrid
+            days={calendarDays}
+            onDayPress={handleDayPress}
+            onSwipeLeft={handleNextMonth}
+            onSwipeRight={handlePreviousMonth}
+          />
 
-        <CalendarLegend totalSubscriptions={stats.total} newThisMonth={0} />
+          <CalendarLegend totalSubscriptions={stats.total} newThisMonth={0} />
 
-        <CalendarFooter
-          monthlyTotal={stats.monthlyTotal}
-          onSearchPress={() => setShowSearchModal(true)}
-        />
-      </View>
+          <StatsSection
+            weeklyTotal={spendingStats.weekly}
+            monthlyTotal={spendingStats.monthly}
+            yearlyTotal={spendingStats.yearly}
+          />
+
+          <CalendarFooter
+            monthlyTotal={stats.monthlyTotal}
+            onSearchPress={() => setShowSearchModal(true)}
+          />
+        </View>
+      </ScrollView>
 
       <AddSubscriptionModal
         visible={showAddModal}
@@ -200,6 +254,12 @@ const styles = StyleSheet.create({
   loadingContainer: {
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
   },
   card: {
     backgroundColor: colors.cardBackground,
