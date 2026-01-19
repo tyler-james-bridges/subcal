@@ -109,3 +109,69 @@ export function getSubscriptionStats(subscriptions: Subscription[]) {
     monthlyTotal: getMonthlyTotal(active),
   };
 }
+
+/**
+ * Calculate weekly spending based on billing cycles
+ * Weekly = monthly / 4.33 (average weeks per month)
+ */
+export function getWeeklyTotal(subscriptions: Subscription[]): number {
+  const monthlyTotal = getMonthlyTotal(subscriptions);
+  return monthlyTotal / 4.33;
+}
+
+/**
+ * Calculate yearly spending based on billing cycles
+ */
+export function getYearlyTotal(subscriptions: Subscription[]): number {
+  return subscriptions.reduce((total, sub) => {
+    if (!sub.isActive) return total;
+
+    if (sub.billingCycle === 'yearly') {
+      return total + sub.price;
+    } else {
+      // Convert monthly to yearly
+      return total + sub.price * 12;
+    }
+  }, 0);
+}
+
+/**
+ * Get comprehensive spending stats
+ */
+export function getSpendingStats(subscriptions: Subscription[]) {
+  const active = subscriptions.filter((s) => s.isActive);
+
+  return {
+    weekly: getWeeklyTotal(active),
+    monthly: getMonthlyTotal(active),
+    yearly: getYearlyTotal(active),
+  };
+}
+
+/**
+ * Calculate the number of days remaining in a free trial
+ * Returns null if no trial or trial has ended
+ */
+export function getTrialDaysRemaining(trialEndDate: string | undefined): number | null {
+  if (!trialEndDate) return null;
+
+  const endDate = new Date(trialEndDate);
+  const today = new Date();
+
+  // Reset to start of day for accurate comparison
+  today.setHours(0, 0, 0, 0);
+  endDate.setHours(0, 0, 0, 0);
+
+  const diffTime = endDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays >= 0 ? diffDays : null;
+}
+
+/**
+ * Check if a subscription is currently in trial period
+ */
+export function isInTrialPeriod(subscription: Subscription): boolean {
+  const daysRemaining = getTrialDaysRemaining(subscription.trialEndDate);
+  return daysRemaining !== null && daysRemaining >= 0;
+}

@@ -32,6 +32,7 @@ export interface Subscription {
   color: string;
   notes?: string;
   isActive: boolean;
+  trialEndDate?: string; // ISO date string for free trial end date
 }
 
 export interface CalendarDay {

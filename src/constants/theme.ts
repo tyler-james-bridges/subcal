@@ -24,6 +24,7 @@ export const colors = {
 
   monthly: '#8b5cf6',
   yearly: '#f97316',
+  trial: '#22d3ee', // Cyan for free trials
 };
 
 export const spacing = {

@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { CalendarDay as CalendarDayType } from '../types';
 import { colors, spacing, borderRadius, fontSize } from '../constants';
 import { ServiceIcon } from './ServiceIcon';
+import { isInTrialPeriod, lightHaptic } from '../utils';
 
 interface CalendarDayProps {
   day: CalendarDayType;
@@ -15,7 +16,13 @@ export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
 
   const hasMonthly = subscriptions.some((s) => s.billingCycle === 'monthly');
   const hasYearly = subscriptions.some((s) => s.billingCycle === 'yearly');
+  const hasTrial = subscriptions.some((s) => isInTrialPeriod(s));
   const displaySubscription = subscriptions[0];
+
+  const handlePress = () => {
+    lightHaptic();
+    onPress?.(day);
+  };
 
   return (
     <TouchableOpacity
@@ -24,8 +31,9 @@ export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
         cellHeight ? { height: cellHeight } : null,
         isToday && styles.todayContainer,
         !isCurrentMonth && styles.otherMonth,
+        hasTrial && styles.trialContainer,
       ]}
-      onPress={() => onPress?.(day)}
+      onPress={handlePress}
       activeOpacity={0.7}
     >
       <View style={styles.header}>
@@ -38,8 +46,9 @@ export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
         >
           {dayOfMonth}
         </Text>
-        {(hasMonthly || hasYearly) && (
+        {(hasMonthly || hasYearly || hasTrial) && (
           <View style={styles.indicators}>
+            {hasTrial && <View style={[styles.indicator, styles.trialIndicator]} />}
             {hasMonthly && <View style={[styles.indicator, styles.monthlyIndicator]} />}
             {hasYearly && <View style={[styles.indicator, styles.yearlyIndicator]} />}
           </View>
@@ -77,6 +86,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     opacity: 0.5,
   },
+  trialContainer: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.trial,
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -102,6 +116,9 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
+  },
+  trialIndicator: {
+    backgroundColor: colors.trial,
   },
   monthlyIndicator: {
     backgroundColor: colors.monthly,
