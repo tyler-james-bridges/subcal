@@ -5,6 +5,7 @@ import {
   StyleSheet,
   Modal,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -35,34 +36,36 @@ export function DayDetailModal({
 
   return (
     <Modal visible={visible} animationType="slide" transparent>
-      <View style={styles.overlay}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <Text style={styles.title}>{format(date, 'EEEE, MMMM d')}</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close">
-              <Ionicons name="close" size={24} color={colors.textSecondary} />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.content}>
-            {subscriptions.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="calendar-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>No subscriptions due on this day</Text>
+      <TouchableWithoutFeedback onPress={onClose}>
+        <View style={styles.overlay}>
+          <TouchableWithoutFeedback>
+            <View style={styles.container}>
+              <View style={styles.handle} />
+              <View style={styles.header}>
+                <Text style={styles.title}>{format(date, 'EEEE, MMMM d')}</Text>
               </View>
-            ) : (
-              subscriptions.map((subscription) => (
-                <SubscriptionCard
-                  key={subscription.id}
-                  subscription={subscription}
-                  onDelete={() => onDeleteSubscription(subscription.id)}
-                  onToggle={() => onToggleSubscription(subscription.id)}
-                />
-              ))
-            )}
-          </ScrollView>
+
+              <ScrollView style={styles.content}>
+                {subscriptions.length === 0 ? (
+                  <View style={styles.emptyState}>
+                    <Ionicons name="calendar-outline" size={48} color={colors.textMuted} />
+                    <Text style={styles.emptyText}>No subscriptions due on this day</Text>
+                  </View>
+                ) : (
+                  subscriptions.map((subscription) => (
+                    <SubscriptionCard
+                      key={subscription.id}
+                      subscription={subscription}
+                      onDelete={() => onDeleteSubscription(subscription.id)}
+                      onToggle={() => onToggleSubscription(subscription.id)}
+                    />
+                  ))
+                )}
+              </ScrollView>
+            </View>
+          </TouchableWithoutFeedback>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </Modal>
   );
 }
@@ -126,24 +129,25 @@ const styles = StyleSheet.create({
     backgroundColor: colors.cardBackground,
     borderTopLeftRadius: borderRadius.xl,
     borderTopRightRadius: borderRadius.xl,
-    maxHeight: '70%',
-    minHeight: 300,
+    maxHeight: '60%',
+  },
+  handle: {
+    width: 36,
+    height: 5,
+    backgroundColor: colors.textMuted,
+    borderRadius: 3,
+    alignSelf: 'center',
+    marginTop: spacing.sm,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    padding: spacing.lg,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
   },
   title: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
+    fontSize: fontSize.lg,
+    fontWeight: '600',
     color: colors.text,
-  },
-  closeButton: {
-    padding: spacing.xs,
   },
   content: {
     padding: spacing.lg,
