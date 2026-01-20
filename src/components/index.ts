@@ -1,3 +1,4 @@
+export * from './ErrorBoundary';
 export * from './ServiceIcon';
 export * from './CalendarDay';
 export * from './CalendarGrid';

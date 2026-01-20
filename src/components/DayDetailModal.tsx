@@ -152,7 +152,7 @@ function SubscriptionCard({ subscription, onDelete, onToggle, onEdit }: Subscrip
                   ? 'Trial ends TODAY!'
                   : trialDaysRemaining === 1
                     ? 'Trial ends in 1 day'
-                    : \`Trial ends in \${trialDaysRemaining} days\`}
+                    : `Trial ends in ${trialDaysRemaining} days`}
               </Text>
             </View>
           )}
@@ -162,7 +162,7 @@ function SubscriptionCard({ subscription, onDelete, onToggle, onEdit }: Subscrip
                 ? 'Renews today'
                 : daysUntilRenewal === 1
                   ? 'Renews in 1 day'
-                  : \`Renews in \${daysUntilRenewal} days\`}
+                  : `Renews in ${daysUntilRenewal} days`}
             </Text>
           )}
           <View style={styles.cardMeta}>
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   trialBannerUrgent: {
-    backgroundColor: \`\${colors.error}20\`,
+    backgroundColor: `${colors.error}20`,
     paddingHorizontal: spacing.sm,
     paddingVertical: 2,
     borderRadius: borderRadius.sm,
@@ -324,13 +324,13 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
   },
   trialBadge: {
-    backgroundColor: \`\${colors.trial}33\`,
+    backgroundColor: `${colors.trial}33`,
   },
   monthlyBadge: {
-    backgroundColor: \`\${colors.monthly}33\`,
+    backgroundColor: `${colors.monthly}33`,
   },
   yearlyBadge: {
-    backgroundColor: \`\${colors.yearly}33\`,
+    backgroundColor: `${colors.yearly}33`,
   },
   cycleBadgeText: {
     fontSize: fontSize.xs,
