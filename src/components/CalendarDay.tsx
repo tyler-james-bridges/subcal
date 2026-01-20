@@ -12,7 +12,7 @@ interface CalendarDayProps {
 }
 
 export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
-  const { dayOfMonth, isCurrentMonth, isToday, subscriptions } = day;
+  const { date, dayOfMonth, isCurrentMonth, isToday, subscriptions } = day;
 
   const hasMonthly = subscriptions.some((s) => s.billingCycle === 'monthly');
   const hasYearly = subscriptions.some((s) => s.billingCycle === 'yearly');
@@ -23,6 +23,10 @@ export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
     lightHaptic();
     onPress?.(day);
   };
+
+  const monthName = date.toLocaleDateString('en-US', { month: 'long' });
+  const subCount = subscriptions.length;
+  const subText = subCount === 0 ? 'no subscriptions' : `${subCount} subscription${subCount > 1 ? 's' : ''}`;
 
   return (
     <TouchableOpacity
@@ -35,6 +39,7 @@ export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
       ]}
       onPress={handlePress}
       activeOpacity={0.7}
+      accessibilityLabel={`${monthName} ${dayOfMonth}, ${subText}`}
     >
       <View style={styles.header}>
         <Text
