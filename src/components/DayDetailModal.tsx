@@ -14,7 +14,7 @@ import { format } from 'date-fns';
 import { CalendarDay, Subscription } from '../types';
 import { colors, spacing, borderRadius, fontSize } from '../constants';
 import { ServiceIcon } from './ServiceIcon';
-import { formatCurrency, getTrialDaysRemaining, mediumHaptic } from '../utils';
+import { formatCurrency, getTrialDaysRemaining, getDaysUntilRenewal, mediumHaptic } from '../utils';
 import { AddSubscriptionModal } from './AddSubscriptionModal';
 
 interface DayDetailModalProps {
@@ -131,6 +131,8 @@ interface SubscriptionCardProps {
 function SubscriptionCard({ subscription, onDelete, onToggle, onEdit }: SubscriptionCardProps) {
   const { name, price, currency, billingCycle, icon, isActive, trialEndDate } = subscription;
   const trialDaysRemaining = getTrialDaysRemaining(trialEndDate);
+  const daysUntilRenewal = getDaysUntilRenewal(subscription);
+  const trialEndsToday = trialDaysRemaining === 0;
 
   return (
     <View style={[styles.card, !isActive && styles.cardInactive]}>
@@ -139,16 +141,29 @@ function SubscriptionCard({ subscription, onDelete, onToggle, onEdit }: Subscrip
         <View style={styles.cardInfo}>
           <Text style={[styles.cardName, !isActive && styles.textInactive]}>{name}</Text>
           {trialDaysRemaining !== null && (
-            <View style={styles.trialBanner}>
-              <Ionicons name="time-outline" size={12} color={colors.trial} />
-              <Text style={styles.trialText}>
-                {trialDaysRemaining === 0
-                  ? 'Trial ends today!'
+            <View style={[styles.trialBanner, trialEndsToday && styles.trialBannerUrgent]}>
+              <Ionicons
+                name={trialEndsToday ? 'warning' : 'time-outline'}
+                size={12}
+                color={trialEndsToday ? colors.error : colors.trial}
+              />
+              <Text style={[styles.trialText, trialEndsToday && styles.trialTextUrgent]}>
+                {trialEndsToday
+                  ? 'Trial ends TODAY!'
                   : trialDaysRemaining === 1
                     ? 'Trial ends in 1 day'
-                    : `Trial ends in ${trialDaysRemaining} days`}
+                    : \`Trial ends in \${trialDaysRemaining} days\`}
               </Text>
             </View>
+          )}
+          {trialDaysRemaining === null && daysUntilRenewal !== null && (
+            <Text style={styles.renewalText}>
+              {daysUntilRenewal === 0
+                ? 'Renews today'
+                : daysUntilRenewal === 1
+                  ? 'Renews in 1 day'
+                  : \`Renews in \${daysUntilRenewal} days\`}
+            </Text>
           )}
           <View style={styles.cardMeta}>
             <View
@@ -278,10 +293,25 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: spacing.xs,
   },
+  trialBannerUrgent: {
+    backgroundColor: \`\${colors.error}20\`,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
   trialText: {
     fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.trial,
+  },
+  trialTextUrgent: {
+    color: colors.error,
+    fontWeight: '700',
+  },
+  renewalText: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    marginBottom: spacing.xs,
   },
   cardMeta: {
     flexDirection: 'row',
@@ -294,13 +324,13 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.sm,
   },
   trialBadge: {
-    backgroundColor: `${colors.trial}33`,
+    backgroundColor: \`\${colors.trial}33\`,
   },
   monthlyBadge: {
-    backgroundColor: `${colors.monthly}33`,
+    backgroundColor: \`\${colors.monthly}33\`,
   },
   yearlyBadge: {
-    backgroundColor: `${colors.yearly}33`,
+    backgroundColor: \`\${colors.yearly}33\`,
   },
   cycleBadgeText: {
     fontSize: fontSize.xs,
