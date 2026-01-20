@@ -52,10 +52,22 @@ export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
           {dayOfMonth}
         </Text>
         {(hasMonthly || hasYearly || hasTrial) && (
-          <View style={styles.indicators}>
-            {hasTrial && <View style={[styles.indicator, styles.trialIndicator]} />}
-            {hasMonthly && <View style={[styles.indicator, styles.monthlyIndicator]} />}
-            {hasYearly && <View style={[styles.indicator, styles.yearlyIndicator]} />}
+          <View style={styles.indicators} accessibilityLabel={`${hasTrial ? 'Trial ' : ''}${hasMonthly ? 'Monthly ' : ''}${hasYearly ? 'Yearly' : ''}`.trim()}>
+            {hasTrial && (
+              <View style={[styles.indicator, styles.trialIndicator]}>
+                <Text style={styles.indicatorLabel}>T</Text>
+              </View>
+            )}
+            {hasMonthly && (
+              <View style={[styles.indicator, styles.monthlyIndicator]}>
+                <Text style={styles.indicatorLabel}>M</Text>
+              </View>
+            )}
+            {hasYearly && (
+              <View style={[styles.indicator, styles.yearlyIndicator]}>
+                <Text style={styles.indicatorLabel}>Y</Text>
+              </View>
+            )}
           </View>
         )}
       </View>
@@ -118,9 +130,17 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   indicator: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  indicatorLabel: {
+    fontSize: 8,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    lineHeight: 10,
   },
   trialIndicator: {
     backgroundColor: colors.trial,
