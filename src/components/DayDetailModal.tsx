@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   TouchableWithoutFeedback,
   ScrollView,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { format } from 'date-fns';
@@ -39,9 +40,20 @@ export function DayDetailModal({
 
   const { date, subscriptions } = day;
 
-  const handleDelete = (id: string) => {
+  const handleDelete = (id: string, name: string) => {
     mediumHaptic();
-    onDeleteSubscription(id);
+    Alert.alert(
+      'Delete Subscription',
+      `Are you sure you want to delete "${name}"?`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => onDeleteSubscription(id),
+        },
+      ]
+    );
   };
 
   const handleToggle = (id: string) => {
@@ -85,7 +97,7 @@ export function DayDetailModal({
                     <SubscriptionCard
                       key={subscription.id}
                       subscription={subscription}
-                      onDelete={() => handleDelete(subscription.id)}
+                      onDelete={() => handleDelete(subscription.id, subscription.name)}
                       onToggle={() => handleToggle(subscription.id)}
                       onEdit={() => handleEdit(subscription)}
                     />
