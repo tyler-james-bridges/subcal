@@ -175,3 +175,20 @@ export function isInTrialPeriod(subscription: Subscription): boolean {
   const daysRemaining = getTrialDaysRemaining(subscription.trialEndDate);
   return daysRemaining !== null && daysRemaining >= 0;
 }
+
+/**
+ * Calculate the number of subscriptions added in a given month
+ * A subscription is "new" if its startDate falls within the specified month
+ */
+export function getNewSubscriptionsThisMonth(
+  subscriptions: Subscription[],
+  currentDate: Date
+): number {
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+
+  return subscriptions.filter((sub) => {
+    const startDate = new Date(sub.startDate);
+    return startDate >= monthStart && startDate <= monthEnd;
+  }).length;
+}

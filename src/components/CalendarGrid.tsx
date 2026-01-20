@@ -10,6 +10,7 @@ import {
 import { CalendarDay as CalendarDayType } from '../types';
 import { colors, spacing, fontSize } from '../constants';
 import { CalendarDay } from './CalendarDay';
+import { lightHaptic } from '../utils/haptics';
 
 const SWIPE_THRESHOLD = 50;
 const SWIPE_VELOCITY_THRESHOLD = 0.3;
@@ -112,6 +113,7 @@ export function CalendarGrid({
           (dx < 0 && vx < -SWIPE_VELOCITY_THRESHOLD)
         ) {
           // Swipe left - next month
+          lightHaptic();
           animateTransition('left', () => {
             onSwipeLeft?.();
           });
@@ -120,6 +122,7 @@ export function CalendarGrid({
           (dx > 0 && vx > SWIPE_VELOCITY_THRESHOLD)
         ) {
           // Swipe right - previous month
+          lightHaptic();
           animateTransition('right', () => {
             onSwipeRight?.();
           });
