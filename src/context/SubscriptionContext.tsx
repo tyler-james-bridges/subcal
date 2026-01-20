@@ -3,6 +3,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Subscription } from '../types';
 import { saveSubscriptions, loadSubscriptions } from '../utils/storage';
 import { sampleSubscriptions } from '../data/sampleSubscriptions';
+import { successHaptic } from '../utils/haptics';
 import {
   requestNotificationPermissions,
   scheduleAllRenewalNotifications,
@@ -85,6 +86,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     const updated = [...subscriptions, newSubscription];
     setSubscriptions(updated);
     await saveSubscriptions(updated);
+    successHaptic();
   };
 
   const addSubscriptions = async (newSubscriptions: Omit<Subscription, 'id'>[]) => {
@@ -112,6 +114,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     const updated = subscriptions.filter((sub) => sub.id !== id);
     setSubscriptions(updated);
     await saveSubscriptions(updated);
+    successHaptic();
   };
 
   const toggleSubscription = async (id: string) => {

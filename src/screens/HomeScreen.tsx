@@ -22,6 +22,7 @@ import {
   DayDetailModal,
   SearchFilterModal,
   StatementImportModal,
+  ErrorBoundary,
 } from '../components';
 import { useSubscriptions } from '../context/SubscriptionContext';
 import {
