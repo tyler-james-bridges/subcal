@@ -108,6 +108,10 @@ maestro test .maestro/flows/screenshots.yaml
 - @expo/vector-icons for icons
 - Maestro for UI testing
 
+## Acknowledgments
+
+Design inspired by [Maxim Kuznetsov (@disarto_max)](https://x.com/disarto_max/status/2012212220365541747). Check out his product design work on [X](https://x.com/disarto_max).
+
 ## License
 
 MIT
