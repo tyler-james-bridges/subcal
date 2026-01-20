@@ -24,6 +24,10 @@ export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
     onPress?.(day);
   };
 
+  const monthName = date.toLocaleDateString('en-US', { month: 'long' });
+  const subCount = subscriptions.length;
+  const subText = subCount === 0 ? 'no subscriptions' : `${subCount} subscription${subCount > 1 ? 's' : ''}`;
+
   return (
     <TouchableOpacity
       style={[
@@ -35,6 +39,7 @@ export function CalendarDay({ day, onPress, cellHeight }: CalendarDayProps) {
       ]}
       onPress={handlePress}
       activeOpacity={0.7}
+      accessibilityLabel={`${monthName} ${dayOfMonth}, ${subText}`}
     >
       <View style={styles.header}>
         <Text
