@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ServiceIcon as ServiceIconType, BillingCycle, Subscription } from '../types';
@@ -105,6 +106,12 @@ export function AddSubscriptionModal({
 
   const handleSubmit = () => {
     if (!name.trim() || !price.trim()) return;
+
+    const parsedPrice = parseFloat(price);
+    if (isNaN(parsedPrice) || parsedPrice <= 0) {
+      Alert.alert('Invalid Price', 'Please enter a valid positive number for the price.');
+      return;
+    }
 
     lightHaptic();
     const config = serviceConfigs[selectedService];
