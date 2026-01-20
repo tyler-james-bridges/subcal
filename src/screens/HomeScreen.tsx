@@ -279,33 +279,41 @@ export function HomeScreen() {
         </View>
       </ScrollView>
 
-      <AddSubscriptionModal
-        visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onAdd={handleAddSubscription}
-      />
+      <ErrorBoundary fallbackMessage="Unable to load add subscription form">
+        <AddSubscriptionModal
+          visible={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onAdd={handleAddSubscription}
+        />
+      </ErrorBoundary>
 
-      <DayDetailModal
-        visible={showDayDetail}
-        day={selectedDay}
-        onClose={() => setShowDayDetail(false)}
-        onDeleteSubscription={handleDeleteSubscription}
-        onToggleSubscription={handleToggleSubscription}
-        onUpdateSubscription={handleUpdateSubscription}
-      />
+      <ErrorBoundary fallbackMessage="Unable to load day details">
+        <DayDetailModal
+          visible={showDayDetail}
+          day={selectedDay}
+          onClose={() => setShowDayDetail(false)}
+          onDeleteSubscription={handleDeleteSubscription}
+          onToggleSubscription={handleToggleSubscription}
+          onUpdateSubscription={handleUpdateSubscription}
+        />
+      </ErrorBoundary>
 
-      <SearchFilterModal
-        visible={showSearchModal}
-        onClose={() => setShowSearchModal(false)}
-        subscriptions={subscriptions}
-        onSelectSubscription={handleSearchSelectSubscription}
-      />
+      <ErrorBoundary fallbackMessage="Unable to load search">
+        <SearchFilterModal
+          visible={showSearchModal}
+          onClose={() => setShowSearchModal(false)}
+          subscriptions={subscriptions}
+          onSelectSubscription={handleSearchSelectSubscription}
+        />
+      </ErrorBoundary>
 
-      <StatementImportModal
-        visible={showImportModal}
-        onClose={() => setShowImportModal(false)}
-        onImport={handleImportSubscriptions}
-      />
+      <ErrorBoundary fallbackMessage="Unable to load import form">
+        <StatementImportModal
+          visible={showImportModal}
+          onClose={() => setShowImportModal(false)}
+          onImport={handleImportSubscriptions}
+        />
+      </ErrorBoundary>
     </SafeAreaView>
   );
 }
