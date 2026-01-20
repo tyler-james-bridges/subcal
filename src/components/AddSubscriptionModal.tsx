@@ -10,6 +10,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Switch,
+  Keyboard,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ServiceIcon as ServiceIconType, BillingCycle, Subscription } from '../types';
@@ -100,6 +101,7 @@ export function AddSubscriptionModal({
       if (parsed.icon) {
         setSelectedService(parsed.icon);
       }
+      Keyboard.dismiss();
     }
   }, [quickInput]);
 
