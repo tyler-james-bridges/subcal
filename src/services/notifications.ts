@@ -2,7 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { Subscription } from '../types';
-import { formatCurrency } from '../utils';
+import { formatCurrency, getTrialDaysRemaining, isInTrialPeriod } from '../utils';
 
 // Configure how notifications are handled when app is in foreground
 Notifications.setNotificationHandler({
@@ -49,13 +49,20 @@ export async function requestNotificationPermissions(): Promise<boolean> {
     return false;
   }
 
-  // Required for iOS
+  // Set up notification channels for Android
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('renewals', {
       name: 'Subscription Renewals',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
       lightColor: '#FF6B35',
+    });
+
+    await Notifications.setNotificationChannelAsync('trials', {
+      name: 'Trial Reminders',
+      importance: Notifications.AndroidImportance.HIGH,
+      vibrationPattern: [0, 250, 250, 250],
+      lightColor: '#FFA500',
     });
   }
 
@@ -188,4 +195,168 @@ export function addNotificationResponseListener(
   callback: (response: Notifications.NotificationResponse) => void
 ): Notifications.EventSubscription {
   return Notifications.addNotificationResponseReceivedListener(callback);
+}
+
+// ============================================================
+// Trial Notification Functions
+// ============================================================
+
+/**
+ * Trial reminder intervals in days before trial ends
+ */
+const TRIAL_REMINDER_DAYS = [3, 1, 0] as const;
+
+export interface TrialNotificationSettings {
+  enabled: boolean;
+  notifyTime: { hour: number; minute: number };
+}
+
+const DEFAULT_TRIAL_SETTINGS: TrialNotificationSettings = {
+  enabled: true,
+  notifyTime: { hour: 9, minute: 0 },
+};
+
+/**
+ * Generate a unique notification identifier for a trial reminder
+ */
+function getTrialNotificationId(subscriptionId: string, daysBefore: number): string {
+  return `trial-${subscriptionId}-${daysBefore}`;
+}
+
+/**
+ * Get the notification message based on days remaining
+ */
+function getTrialNotificationMessage(subscriptionName: string, daysRemaining: number): { title: string; body: string } {
+  if (daysRemaining === 0) {
+    return {
+      title: `${subscriptionName} trial ends today!`,
+      body: `Your free trial for ${subscriptionName} ends today. Cancel now to avoid being charged.`,
+    };
+  } else if (daysRemaining === 1) {
+    return {
+      title: `${subscriptionName} trial ends tomorrow`,
+      body: `Your free trial for ${subscriptionName} ends tomorrow. Cancel now if you don't want to continue.`,
+    };
+  } else {
+    return {
+      title: `${subscriptionName} trial ending soon`,
+      body: `Your free trial for ${subscriptionName} ends in ${daysRemaining} days. Review and cancel if needed.`,
+    };
+  }
+}
+
+/**
+ * Schedule trial reminder notifications for a subscription
+ * Schedules notifications at 3 days, 1 day, and day of trial ending
+ */
+export async function scheduleTrialNotifications(
+  subscription: Subscription,
+  settings: TrialNotificationSettings = DEFAULT_TRIAL_SETTINGS
+): Promise<string[]> {
+  const scheduledIds: string[] = [];
+
+  if (!settings.enabled || !subscription.isActive || !subscription.trialEndDate) {
+    return scheduledIds;
+  }
+
+  // Check if subscription is currently in trial
+  if (!isInTrialPeriod(subscription)) {
+    return scheduledIds;
+  }
+
+  const trialEndDate = new Date(subscription.trialEndDate);
+  trialEndDate.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  for (const daysBefore of TRIAL_REMINDER_DAYS) {
+    const notificationDate = new Date(trialEndDate);
+    notificationDate.setDate(notificationDate.getDate() - daysBefore);
+    notificationDate.setHours(settings.notifyTime.hour, settings.notifyTime.minute, 0, 0);
+
+    // Don't schedule if the notification date has already passed
+    if (notificationDate <= new Date()) {
+      continue;
+    }
+
+    const { title, body } = getTrialNotificationMessage(subscription.name, daysBefore);
+    const notificationId = getTrialNotificationId(subscription.id, daysBefore);
+
+    try {
+      // Cancel any existing notification with this ID first
+      await Notifications.cancelScheduledNotificationAsync(notificationId).catch(() => {
+        // Ignore error if notification doesn't exist
+      });
+
+      await Notifications.scheduleNotificationAsync({
+        identifier: notificationId,
+        content: {
+          title,
+          body,
+          data: {
+            subscriptionId: subscription.id,
+            type: 'trial_reminder',
+            daysRemaining: daysBefore,
+          },
+          sound: true,
+          ...(Platform.OS === 'android' && { channelId: 'trials' }),
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: notificationDate,
+        },
+      });
+
+      scheduledIds.push(notificationId);
+    } catch (error) {
+      console.error(`Failed to schedule trial notification for ${subscription.name}:`, error);
+    }
+  }
+
+  if (scheduledIds.length > 0) {
+    console.log(`Scheduled ${scheduledIds.length} trial notifications for ${subscription.name}`);
+  }
+
+  return scheduledIds;
+}
+
+/**
+ * Cancel all trial notifications for a subscription
+ */
+export async function cancelTrialNotifications(subscriptionId: string): Promise<void> {
+  for (const daysBefore of TRIAL_REMINDER_DAYS) {
+    const notificationId = getTrialNotificationId(subscriptionId, daysBefore);
+    try {
+      await Notifications.cancelScheduledNotificationAsync(notificationId);
+    } catch {
+      // Ignore errors - notification may not exist
+    }
+  }
+}
+
+/**
+ * Schedule trial notifications for all subscriptions that have active trials
+ */
+export async function scheduleAllTrialNotifications(
+  subscriptions: Subscription[],
+  settings: TrialNotificationSettings = DEFAULT_TRIAL_SETTINGS
+): Promise<void> {
+  if (!settings.enabled) {
+    return;
+  }
+
+  // Filter to only active subscriptions with trials
+  const subscriptionsWithTrials = subscriptions.filter(
+    (s) => s.isActive && s.trialEndDate && isInTrialPeriod(s)
+  );
+
+  let totalScheduled = 0;
+
+  for (const subscription of subscriptionsWithTrials) {
+    const scheduled = await scheduleTrialNotifications(subscription, settings);
+    totalScheduled += scheduled.length;
+  }
+
+  console.log(`Scheduled ${totalScheduled} trial notifications for ${subscriptionsWithTrials.length} subscriptions`);
 }
