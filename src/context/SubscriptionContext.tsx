@@ -8,6 +8,9 @@ import {
   scheduleAllRenewalNotifications,
   cancelSubscriptionNotifications,
   scheduleRenewalNotification,
+  scheduleTrialNotifications,
+  scheduleAllTrialNotifications,
+  cancelTrialNotifications,
 } from '../services/notifications';
 import { syncWidgetData } from '../services/widgetSync';
 import { getSubscriptionStats } from '../utils';
@@ -57,7 +60,9 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
     const setupNotifications = async () => {
       const hasPermission = await requestNotificationPermissions();
       if (hasPermission && subscriptions.length > 0) {
+        // Schedule both renewal and trial notifications
         await scheduleAllRenewalNotifications(subscriptions);
+        await scheduleAllTrialNotifications(subscriptions);
       }
     };
 
@@ -101,14 +106,32 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   };
 
   const deleteSubscription = async (id: string) => {
+    // Cancel any scheduled notifications (renewal and trial) for this subscription before deleting
+    await cancelSubscriptionNotifications(id);
+    await cancelTrialNotifications(id);
     const updated = subscriptions.filter((sub) => sub.id !== id);
     setSubscriptions(updated);
     await saveSubscriptions(updated);
   };
 
   const toggleSubscription = async (id: string) => {
+    const subscription = subscriptions.find((sub) => sub.id === id);
+    if (!subscription) return;
+
+    const willBeActive = !subscription.isActive;
+
+    if (willBeActive) {
+      // Unpausing: re-schedule renewal and trial notifications
+      await scheduleRenewalNotification({ ...subscription, isActive: true });
+      await scheduleTrialNotifications({ ...subscription, isActive: true });
+    } else {
+      // Pausing: cancel all scheduled notifications (renewal and trial) for this subscription
+      await cancelSubscriptionNotifications(id);
+      await cancelTrialNotifications(id);
+    }
+
     const updated = subscriptions.map((sub) =>
-      sub.id === id ? { ...sub, isActive: !sub.isActive } : sub
+      sub.id === id ? { ...sub, isActive: willBeActive } : sub
     );
     setSubscriptions(updated);
     await saveSubscriptions(updated);
