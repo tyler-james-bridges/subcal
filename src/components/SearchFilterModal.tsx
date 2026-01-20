@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, borderRadius } from '../constants';
 import { Subscription, BillingCycle } from '../types';
 import { ServiceIcon } from './ServiceIcon';
-import { formatCurrency } from '../utils';
+import { formatCurrency, getDaysUntilRenewal } from '../utils';
 
 interface SubscriptionListItemProps {
   item: Subscription;
@@ -25,6 +25,15 @@ const SubscriptionListItem = memo(function SubscriptionListItem({
   item,
   onPress,
 }: SubscriptionListItemProps) {
+  const daysUntilRenewal = getDaysUntilRenewal(item);
+  const renewalText = daysUntilRenewal !== null
+    ? daysUntilRenewal === 0
+      ? 'Renews today'
+      : daysUntilRenewal === 1
+        ? 'Renews in 1 day'
+        : `Renews in ${daysUntilRenewal} days`
+    : null;
+
   return (
     <TouchableOpacity
       style={[styles.subscriptionItem, !item.isActive && styles.inactiveItem]}
@@ -38,6 +47,7 @@ const SubscriptionListItem = memo(function SubscriptionListItem({
           {formatCurrency(item.price)} / {item.billingCycle === 'monthly' ? 'mo' : 'yr'}
           {!item.isActive && ' • Paused'}
         </Text>
+        {renewalText && <Text style={styles.renewalText}>{renewalText}</Text>}
       </View>
       <View style={styles.billingBadge}>
         <View
@@ -333,6 +343,10 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  renewalText: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
   },
   billingBadge: {
     padding: spacing.xs,
