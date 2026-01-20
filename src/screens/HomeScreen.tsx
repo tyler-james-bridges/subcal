@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { CalendarDay as CalendarDayType, DetectedSubscription } from '../types';
+import { CalendarDay as CalendarDayType, DetectedSubscription, Subscription } from '../types';
 import { colors } from '../constants';
 import {
   CalendarHeader,
@@ -31,6 +31,8 @@ import {
   getSubscriptionStats,
   getSpendingStats,
   getNewSubscriptionsThisMonth,
+  getNextBillingDate,
+  getSubscriptionsForDay,
 } from '../utils';
 
 export function HomeScreen() {
@@ -165,6 +167,39 @@ export function HomeScreen() {
     [addSubscriptions]
   );
 
+  const handleSearchSelectSubscription = useCallback(
+    (subscription: Subscription) => {
+      // Get the next billing date for the selected subscription
+      const nextBillingDate = getNextBillingDate(subscription);
+
+      // Navigate to the month containing the billing date
+      setCurrentDate(nextBillingDate);
+
+      // Close the search modal
+      setShowSearchModal(false);
+
+      // Get the subscriptions for that day to show in detail modal
+      const daySubscriptions = getSubscriptionsForDay(nextBillingDate, subscriptions);
+
+      // Create a CalendarDay object for the detail modal
+      const calendarDay: CalendarDayType = {
+        date: nextBillingDate,
+        dayOfMonth: nextBillingDate.getDate(),
+        isCurrentMonth: true,
+        isToday: false,
+        subscriptions: daySubscriptions,
+      };
+
+      // Show the day detail modal for the billing day
+      setSelectedDay(calendarDay);
+      setShowDayDetail(true);
+
+      // Provide haptic feedback
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    },
+    [subscriptions]
+  );
+
   if (isLoading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -240,6 +275,7 @@ export function HomeScreen() {
         visible={showSearchModal}
         onClose={() => setShowSearchModal(false)}
         subscriptions={subscriptions}
+        onSelectSubscription={handleSearchSelectSubscription}
       />
 
       <StatementImportModal
