@@ -12,11 +12,11 @@ import {
   Switch,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { ServiceIcon as ServiceIconType, BillingCycle } from '../types';
+import { ServiceIcon as ServiceIconType, BillingCycle, Subscription } from '../types';
 import { colors, spacing, borderRadius, fontSize, availableServices, serviceConfigs } from '../constants';
 import { ServiceIcon } from './ServiceIcon';
 import { lightHaptic, parseNaturalLanguageSubscription, isNaturalLanguageInput } from '../utils';
-import { addDays, format } from 'date-fns';
+import { addDays, format, differenceInDays } from 'date-fns';
 
 interface AddSubscriptionModalProps {
   visible: boolean;
@@ -33,9 +33,20 @@ interface AddSubscriptionModalProps {
     isActive: boolean;
     trialEndDate?: string;
   }) => void;
+  /** Optional subscription to edit - when provided, modal works in edit mode */
+  subscription?: Subscription;
+  /** Callback for updating an existing subscription */
+  onUpdate?: (id: string, updates: Partial<Subscription>) => void;
 }
 
-export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptionModalProps) {
+export function AddSubscriptionModal({
+  visible,
+  onClose,
+  onAdd,
+  subscription,
+  onUpdate,
+}: AddSubscriptionModalProps) {
+  const isEditMode = !!subscription;
   const [name, setName] = useState('');
   const [price, setPrice] = useState('');
   const [billingCycle, setBillingCycle] = useState<BillingCycle>('monthly');
@@ -45,9 +56,28 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
   const [hasTrial, setHasTrial] = useState(false);
   const [trialDays, setTrialDays] = useState('7');
 
-  // Reset form when modal closes
+  // Pre-populate form when editing, or reset when modal closes
   useEffect(() => {
-    if (!visible) {
+    if (visible && subscription) {
+      // Edit mode: pre-populate with existing subscription data
+      setName(subscription.name);
+      setPrice(subscription.price.toString());
+      setBillingCycle(subscription.billingCycle);
+      setBillingDay(subscription.billingDay.toString());
+      setSelectedService(subscription.icon);
+      setQuickInput('');
+
+      // Handle trial end date
+      if (subscription.trialEndDate) {
+        setHasTrial(true);
+        const daysRemaining = differenceInDays(new Date(subscription.trialEndDate), new Date());
+        setTrialDays(Math.max(1, daysRemaining).toString());
+      } else {
+        setHasTrial(false);
+        setTrialDays('7');
+      }
+    } else if (!visible) {
+      // Reset form when modal closes
       setName('');
       setPrice('');
       setBillingCycle('monthly');
@@ -57,7 +87,7 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
       setHasTrial(false);
       setTrialDays('7');
     }
-  }, [visible]);
+  }, [visible, subscription]);
 
   // Parse natural language input
   useEffect(() => {
@@ -73,7 +103,7 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
     }
   }, [quickInput]);
 
-  const handleAdd = () => {
+  const handleSubmit = () => {
     if (!name.trim() || !price.trim()) return;
 
     lightHaptic();
@@ -82,18 +112,32 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
       ? addDays(new Date(), parseInt(trialDays, 10) || 7).toISOString()
       : undefined;
 
-    onAdd({
-      name: name.trim(),
-      price: parseFloat(price),
-      currency: 'USD',
-      billingCycle,
-      billingDay: parseInt(billingDay, 10) || 1,
-      startDate: new Date().toISOString(),
-      icon: selectedService,
-      color: config.color,
-      isActive: true,
-      trialEndDate,
-    });
+    if (isEditMode && subscription && onUpdate) {
+      // Update existing subscription
+      onUpdate(subscription.id, {
+        name: name.trim(),
+        price: parseFloat(price),
+        billingCycle,
+        billingDay: parseInt(billingDay, 10) || 1,
+        icon: selectedService,
+        color: config.color,
+        trialEndDate,
+      });
+    } else {
+      // Add new subscription
+      onAdd({
+        name: name.trim(),
+        price: parseFloat(price),
+        currency: 'USD',
+        billingCycle,
+        billingDay: parseInt(billingDay, 10) || 1,
+        startDate: new Date().toISOString(),
+        icon: selectedService,
+        color: config.color,
+        isActive: true,
+        trialEndDate,
+      });
+    }
 
     // Reset form
     setName('');
@@ -132,25 +176,29 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
       >
         <View style={styles.container}>
           <View style={styles.header}>
-            <Text style={styles.title}>Add Subscription</Text>
+            <Text style={styles.title}>{isEditMode ? 'Edit Subscription' : 'Add Subscription'}</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeButton} accessibilityLabel="Close">
               <Ionicons name="close" size={24} color={colors.textSecondary} />
             </TouchableOpacity>
           </View>
 
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-            {/* Quick Natural Language Input */}
-            <Text style={styles.label}>Quick Add</Text>
-            <TextInput
-              style={styles.input}
-              value={quickInput}
-              onChangeText={setQuickInput}
-              placeholder='e.g., "Netflix $15.99 monthly on the 15th"'
-              placeholderTextColor={colors.textMuted}
-            />
-            <Text style={styles.hint}>
-              Type naturally and we will fill in the details below
-            </Text>
+            {/* Quick Natural Language Input - only show when adding */}
+            {!isEditMode && (
+              <>
+                <Text style={styles.label}>Quick Add</Text>
+                <TextInput
+                  style={styles.input}
+                  value={quickInput}
+                  onChangeText={setQuickInput}
+                  placeholder='e.g., "Netflix $15.99 monthly on the 15th"'
+                  placeholderTextColor={colors.textMuted}
+                />
+                <Text style={styles.hint}>
+                  Type naturally and we will fill in the details below
+                </Text>
+              </>
+            )}
 
             {/* Service Selection */}
             <Text style={styles.label}>Service</Text>
@@ -304,13 +352,15 @@ export function AddSubscriptionModal({ visible, onClose, onAdd }: AddSubscriptio
             />
           </ScrollView>
 
-          {/* Add Button */}
+          {/* Submit Button */}
           <TouchableOpacity
             style={[styles.addButton, (!name.trim() || !price.trim()) && styles.addButtonDisabled]}
-            onPress={handleAdd}
+            onPress={handleSubmit}
             disabled={!name.trim() || !price.trim()}
           >
-            <Text style={styles.addButtonText}>Add Subscription</Text>
+            <Text style={styles.addButtonText}>
+              {isEditMode ? 'Save Changes' : 'Add Subscription'}
+            </Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

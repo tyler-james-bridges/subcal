@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,7 @@ import { CalendarDay, Subscription } from '../types';
 import { colors, spacing, borderRadius, fontSize } from '../constants';
 import { ServiceIcon } from './ServiceIcon';
 import { formatCurrency, getTrialDaysRemaining, mediumHaptic } from '../utils';
+import { AddSubscriptionModal } from './AddSubscriptionModal';
 
 interface DayDetailModalProps {
   visible: boolean;
@@ -21,6 +22,7 @@ interface DayDetailModalProps {
   onClose: () => void;
   onDeleteSubscription: (id: string) => void;
   onToggleSubscription: (id: string) => void;
+  onUpdateSubscription: (id: string, updates: Partial<Subscription>) => void;
 }
 
 export function DayDetailModal({
@@ -29,7 +31,10 @@ export function DayDetailModal({
   onClose,
   onDeleteSubscription,
   onToggleSubscription,
+  onUpdateSubscription,
 }: DayDetailModalProps) {
+  const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
+
   if (!day) return null;
 
   const { date, subscriptions } = day;
@@ -42,6 +47,20 @@ export function DayDetailModal({
   const handleToggle = (id: string) => {
     mediumHaptic();
     onToggleSubscription(id);
+  };
+
+  const handleEdit = (subscription: Subscription) => {
+    mediumHaptic();
+    setEditingSubscription(subscription);
+  };
+
+  const handleEditClose = () => {
+    setEditingSubscription(null);
+  };
+
+  const handleUpdate = (id: string, updates: Partial<Subscription>) => {
+    onUpdateSubscription(id, updates);
+    setEditingSubscription(null);
   };
 
   return (
@@ -68,6 +87,7 @@ export function DayDetailModal({
                       subscription={subscription}
                       onDelete={() => handleDelete(subscription.id)}
                       onToggle={() => handleToggle(subscription.id)}
+                      onEdit={() => handleEdit(subscription)}
                     />
                   ))
                 )}
@@ -76,6 +96,15 @@ export function DayDetailModal({
           </TouchableWithoutFeedback>
         </View>
       </TouchableWithoutFeedback>
+
+      {/* Edit Subscription Modal */}
+      <AddSubscriptionModal
+        visible={!!editingSubscription}
+        onClose={handleEditClose}
+        onAdd={() => {}} // Not used in edit mode
+        subscription={editingSubscription ?? undefined}
+        onUpdate={handleUpdate}
+      />
     </Modal>
   );
 }
@@ -84,9 +113,10 @@ interface SubscriptionCardProps {
   subscription: Subscription;
   onDelete: () => void;
   onToggle: () => void;
+  onEdit: () => void;
 }
 
-function SubscriptionCard({ subscription, onDelete, onToggle }: SubscriptionCardProps) {
+function SubscriptionCard({ subscription, onDelete, onToggle, onEdit }: SubscriptionCardProps) {
   const { name, price, currency, billingCycle, icon, isActive, trialEndDate } = subscription;
   const trialDaysRemaining = getTrialDaysRemaining(trialEndDate);
 
@@ -135,6 +165,13 @@ function SubscriptionCard({ subscription, onDelete, onToggle }: SubscriptionCard
         </View>
       </View>
       <View style={styles.cardActions}>
+        <TouchableOpacity
+          style={styles.actionButton}
+          onPress={onEdit}
+          accessibilityLabel="Edit subscription"
+        >
+          <Ionicons name="pencil-outline" size={22} color={colors.primary} />
+        </TouchableOpacity>
         <TouchableOpacity style={styles.actionButton} onPress={onToggle}>
           <Ionicons
             name={isActive ? 'pause-circle-outline' : 'play-circle-outline'}

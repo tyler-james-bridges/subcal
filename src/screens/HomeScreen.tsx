@@ -10,7 +10,7 @@ import {
   RefreshControl,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { CalendarDay as CalendarDayType, DetectedSubscription } from '../types';
+import { CalendarDay as CalendarDayType, DetectedSubscription, Subscription } from '../types';
 import { colors } from '../constants';
 import {
   CalendarHeader,
@@ -47,6 +47,7 @@ export function HomeScreen() {
     isLoading,
     addSubscription,
     addSubscriptions,
+    updateSubscription,
     deleteSubscription,
     toggleSubscription,
     refreshSubscriptions,
@@ -137,6 +138,26 @@ export function HomeScreen() {
       }
     },
     [toggleSubscription, selectedDay]
+  );
+
+  const handleUpdateSubscription = useCallback(
+    async (id: string, updates: Partial<Subscription>) => {
+      await updateSubscription(id, updates);
+      // Update selected day's subscriptions after update
+      if (selectedDay) {
+        setSelectedDay((prev) =>
+          prev
+            ? {
+                ...prev,
+                subscriptions: prev.subscriptions.map((s) =>
+                  s.id === id ? { ...s, ...updates } : s
+                ),
+              }
+            : null
+        );
+      }
+    },
+    [updateSubscription, selectedDay]
   );
 
   const handleImportSubscriptions = useCallback(
@@ -234,6 +255,7 @@ export function HomeScreen() {
         onClose={() => setShowDayDetail(false)}
         onDeleteSubscription={handleDeleteSubscription}
         onToggleSubscription={handleToggleSubscription}
+        onUpdateSubscription={handleUpdateSubscription}
       />
 
       <SearchFilterModal
