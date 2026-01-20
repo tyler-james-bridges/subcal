@@ -194,6 +194,25 @@ export function getNewSubscriptionsThisMonth(
 }
 
 /**
+ * Calculate the number of days until the next renewal for a subscription
+ * Returns null if subscription is not active
+ */
+export function getDaysUntilRenewal(subscription: Subscription): number | null {
+  if (!subscription.isActive) return null;
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const nextBilling = getNextBillingDate(subscription);
+  nextBilling.setHours(0, 0, 0, 0);
+
+  const diffTime = nextBilling.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  return diffDays >= 0 ? diffDays : null;
+}
+
+/**
  * Calculate the next billing date for a subscription
  * For monthly: next occurrence of billingDay (this month or next)
  * For yearly: next occurrence of the anniversary date

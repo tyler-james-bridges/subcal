@@ -14,7 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, borderRadius } from '../constants';
 import { Subscription, BillingCycle } from '../types';
 import { ServiceIcon } from './ServiceIcon';
-import { formatCurrency } from '../utils';
+import { formatCurrency, getDaysUntilRenewal } from '../utils';
 
 interface SearchFilterModalProps {
   visible: boolean;
@@ -90,21 +90,32 @@ export function SearchFilterModal({
     onClose();
   };
 
-  const renderSubscription = ({ item }: { item: Subscription }) => (
-    <TouchableOpacity
-      style={[styles.subscriptionItem, !item.isActive && styles.inactiveItem]}
-      onPress={() => onSelectSubscription?.(item)}
-      activeOpacity={0.7}
-    >
-      <ServiceIcon service={item.icon} size={36} />
-      <View style={styles.subscriptionInfo}>
-        <Text style={styles.subscriptionName}>{item.name}</Text>
-        <Text style={styles.subscriptionMeta}>
-          {formatCurrency(item.price)} / {item.billingCycle === 'monthly' ? 'mo' : 'yr'}
-          {!item.isActive && ' • Paused'}
-        </Text>
-      </View>
-      <View style={styles.billingBadge}>
+  const renderSubscription = ({ item }: { item: Subscription }) => {
+    const daysUntilRenewal = getDaysUntilRenewal(item);
+    const renewalText = daysUntilRenewal !== null
+      ? daysUntilRenewal === 0
+        ? 'Renews today'
+        : daysUntilRenewal === 1
+          ? 'Renews in 1 day'
+          : `Renews in ${daysUntilRenewal} days`
+      : null;
+
+    return (
+      <TouchableOpacity
+        style={[styles.subscriptionItem, !item.isActive && styles.inactiveItem]}
+        onPress={() => onSelectSubscription?.(item)}
+        activeOpacity={0.7}
+      >
+        <ServiceIcon service={item.icon} size={36} />
+        <View style={styles.subscriptionInfo}>
+          <Text style={styles.subscriptionName}>{item.name}</Text>
+          <Text style={styles.subscriptionMeta}>
+            {formatCurrency(item.price)} / {item.billingCycle === 'monthly' ? 'mo' : 'yr'}
+            {!item.isActive && ' • Paused'}
+          </Text>
+          {renewalText && <Text style={styles.renewalText}>{renewalText}</Text>}
+        </View>
+        <View style={styles.billingBadge}>
         <View
           style={[
             styles.billingDot,
@@ -114,8 +125,9 @@ export function SearchFilterModal({
           ]}
         />
       </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <Modal
@@ -314,6 +326,11 @@ const styles = StyleSheet.create({
   },
   subscriptionMeta: {
     fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginTop: 2,
+  },
+  renewalText: {
+    fontSize: fontSize.xs,
     color: colors.textSecondary,
     marginTop: 2,
   },
