@@ -192,3 +192,52 @@ export function getNewSubscriptionsThisMonth(
     return startDate >= monthStart && startDate <= monthEnd;
   }).length;
 }
+
+/**
+ * Calculate the next billing date for a subscription
+ * For monthly: next occurrence of billingDay (this month or next)
+ * For yearly: next occurrence of the anniversary date
+ */
+export function getNextBillingDate(subscription: Subscription): Date {
+  const today = new Date();
+  const currentDay = getDate(today);
+  const currentMonth = getMonth(today);
+  const currentYear = getYear(today);
+
+  if (subscription.billingCycle === 'monthly') {
+    // For monthly subscriptions, find the next occurrence of billingDay
+    const daysInCurrentMonth = getDaysInMonth(today);
+    const effectiveBillingDay = Math.min(subscription.billingDay, daysInCurrentMonth);
+
+    if (currentDay <= effectiveBillingDay) {
+      // Billing day is still coming this month
+      return new Date(currentYear, currentMonth, effectiveBillingDay);
+    } else {
+      // Billing day has passed, go to next month
+      const nextMonth = addMonths(today, 1);
+      const daysInNextMonth = getDaysInMonth(nextMonth);
+      const effectiveNextBillingDay = Math.min(subscription.billingDay, daysInNextMonth);
+      return new Date(getYear(nextMonth), getMonth(nextMonth), effectiveNextBillingDay);
+    }
+  } else {
+    // For yearly subscriptions, find the next anniversary
+    const startDate = new Date(subscription.startDate);
+    const startMonth = getMonth(startDate);
+    const startDay = getDate(startDate);
+
+    // Try this year's anniversary
+    const thisYearAnniversary = new Date(currentYear, startMonth, startDay);
+    const daysInAnniversaryMonth = getDaysInMonth(thisYearAnniversary);
+    const effectiveDay = Math.min(startDay, daysInAnniversaryMonth);
+    const correctedThisYearAnniversary = new Date(currentYear, startMonth, effectiveDay);
+
+    if (correctedThisYearAnniversary >= today) {
+      // Anniversary is still coming this year
+      return correctedThisYearAnniversary;
+    } else {
+      // Anniversary has passed, go to next year
+      const nextYearAnniversary = new Date(currentYear + 1, startMonth, effectiveDay);
+      return nextYearAnniversary;
+    }
+  }
+}
