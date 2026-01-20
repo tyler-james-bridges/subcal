@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -15,6 +15,43 @@ import { colors, spacing, fontSize, borderRadius } from '../constants';
 import { Subscription, BillingCycle } from '../types';
 import { ServiceIcon } from './ServiceIcon';
 import { formatCurrency } from '../utils';
+
+interface SubscriptionListItemProps {
+  item: Subscription;
+  onPress?: (subscription: Subscription) => void;
+}
+
+const SubscriptionListItem = memo(function SubscriptionListItem({
+  item,
+  onPress,
+}: SubscriptionListItemProps) {
+  return (
+    <TouchableOpacity
+      style={[styles.subscriptionItem, !item.isActive && styles.inactiveItem]}
+      onPress={() => onPress?.(item)}
+      activeOpacity={0.7}
+    >
+      <ServiceIcon service={item.icon} size={36} />
+      <View style={styles.subscriptionInfo}>
+        <Text style={styles.subscriptionName}>{item.name}</Text>
+        <Text style={styles.subscriptionMeta}>
+          {formatCurrency(item.price)} / {item.billingCycle === 'monthly' ? 'mo' : 'yr'}
+          {!item.isActive && ' • Paused'}
+        </Text>
+      </View>
+      <View style={styles.billingBadge}>
+        <View
+          style={[
+            styles.billingDot,
+            item.billingCycle === 'monthly'
+              ? styles.monthlyDot
+              : styles.yearlyDot,
+          ]}
+        />
+      </View>
+    </TouchableOpacity>
+  );
+});
 
 interface SearchFilterModalProps {
   visible: boolean;
@@ -90,31 +127,11 @@ export function SearchFilterModal({
     onClose();
   };
 
-  const renderSubscription = ({ item }: { item: Subscription }) => (
-    <TouchableOpacity
-      style={[styles.subscriptionItem, !item.isActive && styles.inactiveItem]}
-      onPress={() => onSelectSubscription?.(item)}
-      activeOpacity={0.7}
-    >
-      <ServiceIcon service={item.icon} size={36} />
-      <View style={styles.subscriptionInfo}>
-        <Text style={styles.subscriptionName}>{item.name}</Text>
-        <Text style={styles.subscriptionMeta}>
-          {formatCurrency(item.price)} / {item.billingCycle === 'monthly' ? 'mo' : 'yr'}
-          {!item.isActive && ' • Paused'}
-        </Text>
-      </View>
-      <View style={styles.billingBadge}>
-        <View
-          style={[
-            styles.billingDot,
-            item.billingCycle === 'monthly'
-              ? styles.monthlyDot
-              : styles.yearlyDot,
-          ]}
-        />
-      </View>
-    </TouchableOpacity>
+  const renderSubscription = useCallback(
+    ({ item }: { item: Subscription }) => (
+      <SubscriptionListItem item={item} onPress={onSelectSubscription} />
+    ),
+    [onSelectSubscription]
   );
 
   return (

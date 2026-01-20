@@ -131,6 +131,7 @@ interface SubscriptionCardProps {
 function SubscriptionCard({ subscription, onDelete, onToggle, onEdit }: SubscriptionCardProps) {
   const { name, price, currency, billingCycle, icon, isActive, trialEndDate } = subscription;
   const trialDaysRemaining = getTrialDaysRemaining(trialEndDate);
+  const trialEndsToday = trialDaysRemaining === 0;
 
   return (
     <View style={[styles.card, !isActive && styles.cardInactive]}>
@@ -139,11 +140,15 @@ function SubscriptionCard({ subscription, onDelete, onToggle, onEdit }: Subscrip
         <View style={styles.cardInfo}>
           <Text style={[styles.cardName, !isActive && styles.textInactive]}>{name}</Text>
           {trialDaysRemaining !== null && (
-            <View style={styles.trialBanner}>
-              <Ionicons name="time-outline" size={12} color={colors.trial} />
-              <Text style={styles.trialText}>
-                {trialDaysRemaining === 0
-                  ? 'Trial ends today!'
+            <View style={[styles.trialBanner, trialEndsToday && styles.trialBannerUrgent]}>
+              <Ionicons
+                name={trialEndsToday ? 'warning' : 'time-outline'}
+                size={12}
+                color={trialEndsToday ? colors.error : colors.trial}
+              />
+              <Text style={[styles.trialText, trialEndsToday && styles.trialTextUrgent]}>
+                {trialEndsToday
+                  ? 'Trial ends TODAY!'
                   : trialDaysRemaining === 1
                     ? 'Trial ends in 1 day'
                     : `Trial ends in ${trialDaysRemaining} days`}
@@ -278,10 +283,20 @@ const styles = StyleSheet.create({
     gap: 4,
     marginBottom: spacing.xs,
   },
+  trialBannerUrgent: {
+    backgroundColor: `${colors.error}20`,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+    borderRadius: borderRadius.sm,
+  },
   trialText: {
     fontSize: fontSize.xs,
     fontWeight: '600',
     color: colors.trial,
+  },
+  trialTextUrgent: {
+    color: colors.error,
+    fontWeight: '700',
   },
   cardMeta: {
     flexDirection: 'row',
