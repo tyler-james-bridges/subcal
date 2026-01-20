@@ -30,6 +30,7 @@ import {
   goToPreviousMonth,
   getSubscriptionStats,
   getSpendingStats,
+  getNewSubscriptionsThisMonth,
 } from '../utils';
 
 export function HomeScreen() {
@@ -58,6 +59,10 @@ export function HomeScreen() {
 
   const stats = useMemo(() => getSubscriptionStats(subscriptions), [subscriptions]);
   const spendingStats = useMemo(() => getSpendingStats(subscriptions), [subscriptions]);
+  const newThisMonth = useMemo(
+    () => getNewSubscriptionsThisMonth(subscriptions, currentDate),
+    [subscriptions, currentDate]
+  );
 
   const handlePreviousMonth = useCallback(() => {
     setCurrentDate((prev) => goToPreviousMonth(prev));
@@ -202,7 +207,7 @@ export function HomeScreen() {
             onSwipeRight={handlePreviousMonth}
           />
 
-          <CalendarLegend totalSubscriptions={stats.total} newThisMonth={0} />
+          <CalendarLegend totalSubscriptions={stats.total} newThisMonth={newThisMonth} />
 
           <StatsSection
             weeklyTotal={spendingStats.weekly}
