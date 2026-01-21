@@ -25,6 +25,7 @@ interface SubscriptionContextType {
   deleteSubscription: (id: string) => Promise<void>;
   toggleSubscription: (id: string) => Promise<void>;
   refreshSubscriptions: () => Promise<void>;
+  initializeWithSampleData: () => Promise<void>;
 }
 
 const SubscriptionContext = createContext<SubscriptionContextType | undefined>(undefined);
@@ -36,19 +37,21 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
   const refreshSubscriptions = useCallback(async () => {
     try {
       const loaded = await loadSubscriptions();
-      // If no subscriptions stored, load sample data
-      if (loaded.length === 0) {
-        setSubscriptions(sampleSubscriptions);
-        await saveSubscriptions(sampleSubscriptions);
-      } else {
-        setSubscriptions(loaded);
-      }
+      setSubscriptions(loaded);
     } catch (error) {
       console.error('Failed to load subscriptions:', error);
-      // Fallback to sample data on error
-      setSubscriptions(sampleSubscriptions);
+      setSubscriptions([]);
     } finally {
       setIsLoading(false);
+    }
+  }, []);
+
+  const initializeWithSampleData = useCallback(async () => {
+    try {
+      setSubscriptions(sampleSubscriptions);
+      await saveSubscriptions(sampleSubscriptions);
+    } catch (error) {
+      console.error('Failed to initialize with sample data:', error);
     }
   }, []);
 
@@ -151,6 +154,7 @@ export function SubscriptionProvider({ children }: { children: React.ReactNode }
         deleteSubscription,
         toggleSubscription,
         refreshSubscriptions,
+        initializeWithSampleData,
       }}
     >
       {children}
