@@ -41,19 +41,6 @@ const KNOWN_SERVICES: Record<string, { icon: ServiceIcon; names: string[] }> = {
   openai: { icon: 'openai', names: ['openai', 'chatgpt'] },
 };
 
-// Common subscription keywords
-const SUBSCRIPTION_KEYWORDS = [
-  'subscription',
-  'monthly',
-  'recurring',
-  'membership',
-  'premium',
-  'plus',
-  'pro',
-  'annual',
-  'renewal',
-];
-
 interface OpenAIMessage {
   role: 'system' | 'user' | 'assistant';
   content: string;
