@@ -34,6 +34,12 @@ export function CalendarGrid({
   const translateX = useRef(new Animated.Value(0)).current;
   const opacity = useRef(new Animated.Value(1)).current;
 
+  // Store callbacks in refs so panResponder always has fresh references
+  const onSwipeLeftRef = useRef(onSwipeLeft);
+  const onSwipeRightRef = useRef(onSwipeRight);
+  onSwipeLeftRef.current = onSwipeLeft;
+  onSwipeRightRef.current = onSwipeRight;
+
   // Calculate cell size based on screen width (7 cells + margins)
   const gridPadding = spacing.sm * 2;
   const cardMargin = 32; // 16 on each side
@@ -115,7 +121,7 @@ export function CalendarGrid({
           // Swipe left - next month
           lightHaptic();
           animateTransition('left', () => {
-            onSwipeLeft?.();
+            onSwipeLeftRef.current?.();
           });
         } else if (
           dx > SWIPE_THRESHOLD ||
@@ -124,7 +130,7 @@ export function CalendarGrid({
           // Swipe right - previous month
           lightHaptic();
           animateTransition('right', () => {
-            onSwipeRight?.();
+            onSwipeRightRef.current?.();
           });
         } else {
           // Spring back to original position
