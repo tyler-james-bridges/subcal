@@ -27,13 +27,3 @@ export function mediumHaptic() {
 export function successHaptic() {
   Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 }
-
-// Error haptic for failed/error states
-export function errorHaptic() {
-  Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-}
-
-// Selection haptic for subtle feedback (pull-to-refresh threshold)
-export function selectionHaptic() {
-  Haptics.selectionAsync();
-}
